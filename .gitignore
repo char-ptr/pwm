@@ -15,3 +15,5 @@ Cargo.lock
 .env
 # password for db
 db
+.sqlx
+rustc-ice*

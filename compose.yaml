@@ -13,6 +13,7 @@ services:
       - db-password
     build:
       context: .
+      network: host
       target: final
     command: /bin/server -z db -u postgres --db-pw /run/secrets/db-password -p 5432
     develop:

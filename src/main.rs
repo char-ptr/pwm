@@ -70,7 +70,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let app_router = construct_router(db_pool);
     let listener = tokio::net::TcpListener::bind("0.0.0.0:6087").await.unwrap();
-    println!("Server running on port 6087 so true fr");
+    println!("Server running on port 6087");
     axum::serve(listener, app_router).await.unwrap();
     Ok(())
 }
