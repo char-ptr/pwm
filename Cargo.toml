@@ -1,0 +1,24 @@
+[package]
+name = "pwm"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+sqlx = { version = "0.7", features = [
+  "macros",
+  "migrate",
+  "runtime-tokio",
+  "chrono",
+  "tls-rustls",
+] }
+axum = "0.7"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+dotenvy = "0.15"
+thiserror = "1"
+clap = { version = "4", features = ["derive"] }
+
+[features]
+postgres = ["sqlx/postgres", "sqlx/uuid"]
+default = ["postgres"]
