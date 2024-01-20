@@ -1,4 +1,5 @@
 pub mod user;
+pub mod vault;
 use sqlx::{postgres::PgConnectOptions, PgPool};
 
 //test
