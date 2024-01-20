@@ -9,18 +9,30 @@
 # https://github.com/docker/awesome-compose
 services:
   server:
+    secrets:
+      - db-password
     build:
       context: .
       target: final
+    command: /bin/server -z db -u postgres --db-pw /run/secrets/db-password -p 5432
+    develop:
+      watch:
+        - path: ./cargo.toml
+
+          action: rebuild
+        - path: ./migrations
+          action: rebuild
+        - path: ./src
+          action: rebuild
     ports:
       - 6087:6087
 
-# The commented out section below is an example of how to define a PostgreSQL
-# database that your application can use. `depends_on` tells Docker Compose to
-# start the database before your application. The `db-data` volume persists the
-# database data between container restarts. The `db-password` secret is used
-# to set the database password. You must create `db/password.txt` and add
-# a password of your choosing to it before running `docker compose up`.
+    # The commented out section below is an example of how to define a PostgreSQL
+    # database that your application can use. `depends_on` tells Docker Compose to
+    # start the database before your application. The `db-data` volume persists the
+    # database data between container restarts. The `db-password` secret is used
+    # to set the database password. You must create `db/password.txt` and add
+    # a password of your choosing to it before running `docker compose up`.
     depends_on:
       db:
         condition: service_healthy
@@ -38,7 +50,7 @@ services:
       - POSTGRES_PASSWORD_FILE=/run/secrets/db-password
     ports:
       - 5452:5432
-    # expose:
+      # expose:
       # - 5432
     healthcheck:
       test: [ "CMD", "pg_isready" ]
@@ -50,4 +62,3 @@ volumes:
 secrets:
   db-password:
     file: db/password.txt
-

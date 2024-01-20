@@ -61,7 +61,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 .username(arg_db.username?.as_str())
                 .host(arg_db.host?.as_str())
                 .port(arg_db.port?)
-                .password(&pw);
+                .password(pw.trim());
             Some(pgco)
         })
         .expect("Unable to get db config from env or args.");
@@ -70,7 +70,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let app_router = construct_router(db_pool);
     let listener = tokio::net::TcpListener::bind("0.0.0.0:6087").await.unwrap();
-    println!("Server running on port 6087");
+    println!("Server running on port 6087 so true fr");
     axum::serve(listener, app_router).await.unwrap();
     Ok(())
 }
