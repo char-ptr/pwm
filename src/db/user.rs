@@ -1,4 +1,8 @@
-use chrono::{DateTime, Duration, Utc};
+use chrono::{DateTime, Duration, NaiveDateTime, Utc};
+use scrypt::{
+    password_hash::{PasswordHash, PasswordVerifier},
+    Scrypt,
+};
 use serde::{Deserialize, Serialize};
 use sqlx::{query, PgConnection};
 use uuid::Uuid;
@@ -6,11 +10,11 @@ use uuid::Uuid;
 #[derive(Default, Debug, Deserialize, Serialize)]
 pub struct User {
     pub(crate) user_id: Uuid,
-    first_name: String,
+    first_name: Option<String>,
     username: String,
     password: String,
     content_key: String,
-    created_at: DateTime<Utc>,
+    user_created_at: NaiveDateTime,
 }
 #[derive(Default, Debug, Deserialize, Serialize)]
 pub struct AccessToken {
@@ -65,6 +69,18 @@ impl AccessToken {
     }
 }
 impl User {
+    pub async fn lookup_username(
+        username: &str,
+        db: &mut PgConnection,
+    ) -> Result<Option<User>, sqlx::Error> {
+        sqlx::query_as!(
+            User,
+            "select * from pwm_users where username = $1",
+            username
+        )
+        .fetch_optional(db)
+        .await
+    }
     pub async fn commit_to_db(&self, db: &mut PgConnection) -> Result<(), sqlx::Error> {
         sqlx::query!(
             "insert into pwm_users (user_id, first_name, username, password, user_created_at, content_key) values ($1, $2, $3, $4, $5, $6) on conflict do nothing",
@@ -72,7 +88,7 @@ impl User {
             self.first_name,
             self.username,
             self.password,
-            self.created_at.naive_utc(),
+            self.user_created_at,
             self.content_key
 
         )
@@ -87,6 +103,12 @@ impl User {
             access_token: Uuid::new_v4(),
         }
     }
+    pub fn check_password(&self, other: &str) -> Result<(), ()> {
+        let hash = PasswordHash::new(&self.password).map_err(|_| ())?;
+        Scrypt
+            .verify_password(other.as_bytes(), &hash)
+            .map_err(|_| ())
+    }
 
     pub fn new(
         username: String,
@@ -94,14 +116,13 @@ impl User {
         content_key: String,
         first_name: Option<String>,
     ) -> Self {
-        let first_name = first_name.unwrap_or_default();
         Self {
             username,
             password,
             content_key,
             first_name,
             user_id: Uuid::new_v4(),
-            created_at: Utc::now(),
+            user_created_at: Utc::now().naive_utc(),
         }
     }
 }

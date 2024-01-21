@@ -1,6 +1,5 @@
 use std::{error::Error, fs::File, io::Read, path::Path, str::FromStr};
 
-use axum::{routing::get, Router};
 use clap::{Args, Parser};
 use pwm::{db::init_db, routes::construct_router};
 use sqlx::postgres::PgConnectOptions;
