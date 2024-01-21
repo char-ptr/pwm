@@ -3,6 +3,13 @@ name = "pwm"
 version = "0.1.0"
 edition = "2021"
 
+[profile.release]
+codegen-units = 1
+panic = "abort"
+lto = true
+opt-level = 3
+strip = true
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -13,7 +20,7 @@ sqlx = { version = "0.7", features = [
   "chrono",
   "tls-rustls",
 ] }
-axum = "0.7"
+axum = { version = "0.7.4", features = ["macros", "json"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 dotenvy = "0.15"
 thiserror = "1"
@@ -23,6 +30,8 @@ serde_json = "1"
 uuid = { version = "1", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 scrypt = "0.11.0"
+log = "0.4"
+pretty_env_logger = "0.5"
 
 
 [features]

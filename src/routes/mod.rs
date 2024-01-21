@@ -14,5 +14,5 @@ pub fn construct_router(db: PgPool) -> Router {
         // cheap.
         .nest("/account", ACCOUNT_ROUTER.clone())
         .route("/test", get(test_route))
-        .with_state(db)
+        .with_state(crate::PwmState(db))
 }

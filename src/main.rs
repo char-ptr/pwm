@@ -44,6 +44,7 @@ fn read_file_string(possible_file: &str) -> Option<String> {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    pretty_env_logger::init();
     let _ = dotenvy::dotenv();
 
     let args = ClapCli::parse();

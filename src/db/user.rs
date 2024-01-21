@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{query, PgConnection};
 use uuid::Uuid;
 
-#[derive(Default, Debug, Deserialize, Serialize)]
+#[derive(Clone, Default, Debug, Deserialize, Serialize)]
 pub struct User {
     pub(crate) user_id: Uuid,
     first_name: Option<String>,
@@ -16,13 +16,31 @@ pub struct User {
     content_key: String,
     user_created_at: NaiveDateTime,
 }
-#[derive(Default, Debug, Deserialize, Serialize)]
+#[derive(Clone, Default, Debug, Deserialize, Serialize)]
 pub struct AccessToken {
     user_id: Uuid,
     access_token: Uuid,
-    expire_at: DateTime<Utc>,
+    expire_at: NaiveDateTime,
 }
 impl AccessToken {
+    pub async fn get_user(&self, db: &mut PgConnection) -> Result<User, sqlx::Error> {
+        sqlx::query_as!(
+            User,
+            "select * from pwm_users where user_id = $1",
+            self.user_id
+        )
+        .fetch_one(db)
+        .await
+    }
+    pub async fn lookup(token: &Uuid, db: &mut PgConnection) -> Result<Option<Self>, sqlx::Error> {
+        sqlx::query_as!(
+            AccessToken,
+            "select * from pwm_access_token where access_token = $1",
+            token
+        )
+        .fetch_optional(db)
+        .await
+    }
     pub async fn delete(self, db: &mut PgConnection) -> Result<(), (Self, sqlx::Error)> {
         query!(
             "delete from pwm_access_token where access_token = $1",
@@ -33,11 +51,11 @@ impl AccessToken {
         .and(Ok(()))
         .map_err(|err| (self, err))
     }
-    pub fn extend(&mut self, by: Duration) -> &DateTime<Utc> {
+    pub fn extend(&mut self, by: Duration) -> &NaiveDateTime {
         self.expire_at += by;
         &self.expire_at
     }
-    pub fn expires(&self) -> &DateTime<Utc> {
+    pub fn expires(&self) -> &NaiveDateTime {
         &self.expire_at
     }
     pub fn token(&self) -> &Uuid {
@@ -49,7 +67,7 @@ impl AccessToken {
     pub async fn commit_time_update(&self, db: &mut PgConnection) -> Result<(), sqlx::Error> {
         sqlx::query!(
             "update pwm_access_token set expire_at = $1 where access_token = $2",
-            self.expire_at.naive_utc(),
+            self.expire_at,
             self.access_token
         )
         .execute(db)
@@ -57,11 +75,16 @@ impl AccessToken {
         .and(Ok(()))
     }
     pub async fn commit_to_db(&self, db: &mut PgConnection) -> Result<(), sqlx::Error> {
+        log::info!(
+            "storing access_token({}) for user({})",
+            self.access_token,
+            self.user_id
+        );
         sqlx::query!(
-            "insert into pwm_access_token (user_id, access_token,expire_at) values ($1, $2, $3) on conflict (user_id) do nothing",
+            "insert into pwm_access_token (user_id, access_token,expire_at) values ($1, $2, $3)",
             self.user_id,
             self.access_token,
-            self.expire_at.naive_utc()
+            self.expire_at
         )
         .execute(db)
         .await
@@ -99,7 +122,7 @@ impl User {
     pub fn create_access_token(&self, duration: Duration) -> AccessToken {
         AccessToken {
             user_id: self.user_id,
-            expire_at: Utc::now() + duration,
+            expire_at: (Utc::now() + duration).naive_utc(),
             access_token: Uuid::new_v4(),
         }
     }
