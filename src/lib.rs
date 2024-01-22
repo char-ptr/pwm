@@ -2,15 +2,18 @@
 
 use std::{fmt::Debug, ops::Deref};
 
+use axum_client_ip::SecureClientIpSource;
+use clap::ValueEnum;
+use sea_orm::DbConn;
 use serde::Serialize;
-use sqlx::PgPool;
 pub mod db;
 pub mod errors;
+pub mod extractors;
 pub mod routes;
 
 #[repr(transparent)]
 #[derive(Debug, Clone)]
-pub struct PwmState(PgPool);
+pub struct PwmState(DbConn);
 
 #[derive(Serialize, Clone)]
 pub enum PwmStatus {
@@ -44,8 +47,31 @@ impl PwmResponse {
     }
 }
 impl Deref for PwmState {
-    type Target = PgPool;
+    type Target = DbConn;
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+#[derive(Debug, Clone, ValueEnum)]
+pub enum SecureIp {
+    RightmostForwarded,
+    RightmostForwardedFor,
+    XRealIp,
+    FlyClientIp,
+    TrueClientIp,
+    CfConnectingIp,
+    ConnectInfo,
+}
+impl From<SecureIp> for SecureClientIpSource {
+    fn from(value: SecureIp) -> Self {
+        match value {
+            SecureIp::FlyClientIp => SecureClientIpSource::FlyClientIp,
+            SecureIp::RightmostForwarded => SecureClientIpSource::RightmostForwarded,
+            SecureIp::RightmostForwardedFor => SecureClientIpSource::RightmostXForwardedFor,
+            SecureIp::XRealIp => SecureClientIpSource::XRealIp,
+            SecureIp::TrueClientIp => SecureClientIpSource::TrueClientIp,
+            SecureIp::CfConnectingIp => SecureClientIpSource::CfConnectingIp,
+            SecureIp::ConnectInfo => SecureClientIpSource::ConnectInfo,
+        }
     }
 }

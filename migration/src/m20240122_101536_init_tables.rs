@@ -1,0 +1,425 @@
+use sea_orm_migration::{
+    prelude::*,
+    sea_orm::{EnumIter, Iterable},
+    sea_query::extension::postgres::Type,
+};
+
+#[derive(DeriveMigrationName)]
+pub struct Migration;
+
+#[async_trait::async_trait]
+impl MigrationTrait for Migration {
+    async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        // Replace the sample below with your own migration scripts
+
+        manager
+            .create_table(
+                Table::create()
+                    .table(User::Table)
+                    .if_not_exists()
+                    .col(ColumnDef::new(User::UserId).uuid().primary_key().not_null())
+                    .col(ColumnDef::new(User::Alias).string().not_null())
+                    .col(
+                        ColumnDef::new(User::Username)
+                            .string()
+                            .unique_key()
+                            .not_null(),
+                    )
+                    .col(ColumnDef::new(User::Password).string().not_null())
+                    .col(ColumnDef::new(User::ContentKey).string().not_null())
+                    .col(
+                        ColumnDef::new(User::UserCreatedAt)
+                            .timestamp_with_time_zone()
+                            .not_null(),
+                    )
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .create_table(
+                Table::create()
+                    .table(AccessToken::Table)
+                    .if_not_exists()
+                    .col(
+                        ColumnDef::new(AccessToken::Token)
+                            .uuid()
+                            .primary_key()
+                            .not_null(),
+                    )
+                    .col(ColumnDef::new(AccessToken::UserId).uuid().not_null())
+                    .col(ColumnDef::new(AccessToken::IpValid).string().not_null())
+                    .col(ColumnDef::new(AccessToken::UserAgent).string().not_null())
+                    .col(
+                        ColumnDef::new(AccessToken::ExpiresAt)
+                            .timestamp_with_time_zone()
+                            .not_null(),
+                    )
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .create_type(
+                Type::create()
+                    .as_enum(VaultOwner::Table)
+                    .values(VaultOwner::iter().skip(1))
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .create_foreign_key(
+                ForeignKey::create()
+                    .from_tbl(AccessToken::Table)
+                    .from_col(AccessToken::UserId)
+                    .to_tbl(User::Table)
+                    .to_col(User::UserId)
+                    .take(),
+            )
+            .await?;
+
+        manager
+            .create_table(
+                Table::create()
+                    .table(Vault::Table)
+                    .if_not_exists()
+                    .col(
+                        ColumnDef::new(Vault::VaultId)
+                            .uuid()
+                            .primary_key()
+                            .not_null(),
+                    )
+                    .col(ColumnDef::new(Vault::UserId).uuid())
+                    .col(ColumnDef::new(Vault::GroupId).uuid())
+                    .col(
+                        ColumnDef::new(Vault::OwnerType)
+                            .enumeration(VaultOwner::Table, VaultOwner::iter().skip(1)),
+                    )
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .create_table(
+                Table::create()
+                    .table(VaultFolder::Table)
+                    .if_not_exists()
+                    .col(
+                        ColumnDef::new(VaultFolder::FolderId)
+                            .uuid()
+                            .primary_key()
+                            .not_null(),
+                    )
+                    .col(ColumnDef::new(VaultFolder::VaultId).uuid().not_null())
+                    .col(ColumnDef::new(VaultFolder::ParentFolderId).uuid())
+                    .col(ColumnDef::new(VaultFolder::Name).string().not_null())
+                    .col(ColumnDef::new(VaultFolder::IconUrl).string())
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .create_foreign_key(
+                ForeignKey::create()
+                    .from_tbl(VaultFolder::Table)
+                    .from_col(VaultFolder::VaultId)
+                    .to_tbl(Vault::Table)
+                    .to_col(Vault::VaultId)
+                    .take(),
+            )
+            .await?;
+        manager
+            .create_foreign_key(
+                ForeignKey::create()
+                    .from_tbl(VaultFolder::Table)
+                    .from_col(VaultFolder::ParentFolderId)
+                    .to_tbl(VaultFolder::Table)
+                    .to_col(VaultFolder::FolderId)
+                    .take(),
+            )
+            .await?;
+        manager
+            .create_table(
+                Table::create()
+                    .table(VaultItem::Table)
+                    .if_not_exists()
+                    .col(
+                        ColumnDef::new(VaultItem::ItemId)
+                            .uuid()
+                            .primary_key()
+                            .not_null(),
+                    )
+                    .col(ColumnDef::new(VaultItem::VaultId).uuid().not_null())
+                    .col(ColumnDef::new(VaultItem::FolderId).uuid())
+                    .col(ColumnDef::new(VaultItem::Name).string().not_null())
+                    .col(ColumnDef::new(VaultItem::Username).string())
+                    .col(ColumnDef::new(VaultItem::Password).string())
+                    .col(ColumnDef::new(VaultItem::Notes).string())
+                    .col(ColumnDef::new(VaultItem::CustomFields).json_binary())
+                    .col(ColumnDef::new(VaultItem::IconUrl).string())
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .create_type(
+                Type::create()
+                    .as_enum(WebsiteMatchDetection::Table)
+                    .values(WebsiteMatchDetection::iter().skip(1))
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .create_table(
+                Table::create()
+                    .table(VaultWebsiteEntry::Table)
+                    .if_not_exists()
+                    .col(
+                        ColumnDef::new(VaultWebsiteEntry::WebsiteId)
+                            .integer()
+                            .auto_increment()
+                            .primary_key()
+                            .not_null(),
+                    )
+                    .col(ColumnDef::new(VaultWebsiteEntry::ItemId).uuid().not_null())
+                    .col(ColumnDef::new(VaultWebsiteEntry::Uri).string().not_null())
+                    .col(
+                        ColumnDef::new(VaultWebsiteEntry::MatchDetection).enumeration(
+                            WebsiteMatchDetection::Table,
+                            WebsiteMatchDetection::iter().skip(1),
+                        ),
+                    )
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .create_foreign_key(
+                ForeignKey::create()
+                    .from_tbl(VaultWebsiteEntry::Table)
+                    .from_col(VaultWebsiteEntry::ItemId)
+                    .to_tbl(VaultItem::Table)
+                    .to_col(VaultItem::ItemId)
+                    .take(),
+            )
+            .await?;
+        manager
+            .create_foreign_key(
+                ForeignKey::create()
+                    .from_tbl(Vault::Table)
+                    .from_col(Vault::UserId)
+                    .to_tbl(User::Table)
+                    .to_col(User::UserId)
+                    .take(),
+            )
+            .await?;
+        manager
+            .create_table(
+                Table::create()
+                    .table(Group::Table)
+                    .if_not_exists()
+                    .col(
+                        ColumnDef::new(Group::GroupId)
+                            .uuid()
+                            .primary_key()
+                            .not_null(),
+                    )
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .create_foreign_key(
+                ForeignKey::create()
+                    .from_tbl(Vault::Table)
+                    .from_col(Vault::GroupId)
+                    .to_tbl(Group::Table)
+                    .to_col(Group::GroupId)
+                    .take(),
+            )
+            .await?;
+        manager
+            .create_foreign_key(
+                ForeignKey::create()
+                    .from_tbl(VaultItem::Table)
+                    .from_col(VaultItem::VaultId)
+                    .to_tbl(Vault::Table)
+                    .to_col(Vault::VaultId)
+                    .take(),
+            )
+            .await?;
+        manager
+            .create_foreign_key(
+                ForeignKey::create()
+                    .from_tbl(VaultItem::Table)
+                    .from_col(VaultItem::FolderId)
+                    .to_tbl(VaultFolder::Table)
+                    .to_col(VaultFolder::FolderId)
+                    .take(),
+            )
+            .await?;
+        Ok(())
+    }
+
+    async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+        // Replace the sample below with your own migration scripts
+
+        manager
+            .drop_table(
+                Table::drop()
+                    .table(User::Table)
+                    .cascade()
+                    .if_exists()
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .drop_table(
+                Table::drop()
+                    .table(AccessToken::Table)
+                    .cascade()
+                    .if_exists()
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .drop_table(
+                Table::drop()
+                    .table(Vault::Table)
+                    .cascade()
+                    .if_exists()
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .drop_table(
+                Table::drop()
+                    .table(VaultFolder::Table)
+                    .cascade()
+                    .if_exists()
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .drop_table(
+                Table::drop()
+                    .table(VaultItem::Table)
+                    .cascade()
+                    .if_exists()
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .drop_table(
+                Table::drop()
+                    .table(VaultWebsiteEntry::Table)
+                    .cascade()
+                    .if_exists()
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .drop_table(
+                Table::drop()
+                    .table(Group::Table)
+                    .cascade()
+                    .if_exists()
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .drop_type(
+                Type::drop()
+                    .name(WebsiteMatchDetection::Table)
+                    .if_exists()
+                    .cascade()
+                    .to_owned(),
+            )
+            .await?;
+        manager
+            .drop_type(
+                Type::drop()
+                    .name(VaultOwner::Table)
+                    .if_exists()
+                    .cascade()
+                    .to_owned(),
+            )
+            .await?;
+
+        Ok(())
+    }
+}
+
+#[derive(DeriveIden)]
+enum User {
+    Table,
+    UserId,
+    Alias,
+    Username,
+    Password,
+    ContentKey,
+    UserCreatedAt,
+}
+#[derive(DeriveIden)]
+enum AccessToken {
+    Table,
+    UserId,
+    Token,
+    IpValid,
+    UserAgent,
+    ExpiresAt,
+}
+#[derive(Iden, EnumIter)]
+enum VaultOwner {
+    Table,
+    #[iden = "User"]
+    User,
+    #[iden = "Group"]
+    Group,
+}
+#[derive(DeriveIden)]
+enum Group {
+    Table,
+    GroupId,
+}
+#[derive(DeriveIden)]
+enum Vault {
+    Table,
+    VaultId,
+    UserId,
+    GroupId,
+    OwnerType,
+}
+#[derive(DeriveIden)]
+enum VaultFolder {
+    Table,
+    VaultId,
+    FolderId,
+    ParentFolderId,
+    Name,
+    IconUrl,
+}
+#[derive(DeriveIden)]
+enum VaultItem {
+    Table,
+    ItemId,
+    VaultId,
+    FolderId,
+    Name,
+    Username,
+    Password,
+    Notes,
+    CustomFields,
+    IconUrl,
+}
+#[derive(DeriveIden)]
+enum VaultWebsiteEntry {
+    Table,
+    WebsiteId,
+    ItemId,
+    Uri,
+    MatchDetection,
+}
+#[derive(Iden, EnumIter)]
+enum WebsiteMatchDetection {
+    Table,
+    Exact,
+    StartsWith,
+    EndsWith,
+    Host,
+    Regex,
+    Contains,
+}

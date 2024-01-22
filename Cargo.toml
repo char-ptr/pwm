@@ -11,15 +11,10 @@ opt-level = 3
 strip = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[workspace]
+members = ["migration"]
 
 [dependencies]
-sqlx = { version = "0.7", features = [
-  "macros",
-  "migrate",
-  "runtime-tokio",
-  "chrono",
-  "tls-rustls",
-] }
 axum = { version = "0.7.4", features = ["macros", "json"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 dotenvy = "0.15"
@@ -30,10 +25,15 @@ serde_json = "1"
 uuid = { version = "1", features = ["v4", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
 scrypt = "0.11.0"
-log = "0.4"
-pretty_env_logger = "0.5"
-
-
-[features]
-postgres = ["sqlx/postgres", "sqlx/uuid"]
-default = ["postgres"]
+tracing = "0.1"
+tracing-subscriber = "0.3"
+migration = { path = "migration" }
+axum-client-ip = "0.5"
+axum-extra = { version = "0.9", features = ["typed-header"] }
+sea-orm = { version = "^0.12.0", features = [
+  "runtime-tokio-rustls", # `ASYNC_RUNTIME` feature
+  "sqlx-postgres",        # `DATABASE_DRIVER` feature
+  "chrono",
+  "uuid",
+  "macros",
+] }

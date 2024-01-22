@@ -1,28 +1,31 @@
 use std::{fmt::Debug, ops::Deref, str::FromStr, sync::LazyLock};
 
 use axum::{
-    async_trait,
-    extract::{FromRef, FromRequestParts, State},
-    http::{HeaderMap, StatusCode},
+    extract::State,
+    http::StatusCode,
     routing::{get, post},
-    Json, RequestPartsExt, Router,
+    Json, Router,
 };
 use chrono::Duration;
 use scrypt::{
     password_hash::{rand_core::OsRng, PasswordHasher, SaltString},
     Scrypt,
 };
+use sea_orm::{ActiveModelTrait, DbErr, IntoActiveModel, Set, TransactionTrait, TryIntoModel};
 use serde::Deserialize;
-use serde_json::Value;
-use sqlx::Connection;
 use uuid::Uuid;
 
 use crate::{
     db::{
-        user::{AccessToken, User},
-        vault::Vault,
+        entities::{
+            access_token,
+            prelude::{User, Vault},
+            user,
+        },
+        models::user_ex::InsensitiveUser,
     },
     errors::DATABASE_CONN_ERR,
+    extractors::{identifiable_device::IdentifiableDevice, logged_in::LoggedInData},
     PwmResponse, PwmState,
 };
 
@@ -38,90 +41,22 @@ pub struct RegisterData {
     first_name: Option<String>,
     content_key: String,
 }
-#[derive(Deserialize, Debug)]
-pub struct LoggedInData(AccessToken);
-
-impl Deref for LoggedInData {
-    type Target = AccessToken;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-#[async_trait]
-impl<S> FromRequestParts<S> for LoggedInData
-where
-    PwmState: FromRef<S>,
-    S: Send + Sync + Debug,
-{
-    type Rejection = (StatusCode, Json<PwmResponse>);
-
-    async fn from_request_parts(
-        parts: &mut axum::http::request::Parts,
-        state: &S,
-    ) -> Result<Self, Self::Rejection> {
-        // unwrapping because infallible
-
-        let State(db): State<PwmState> = parts.extract_with_state(state).await.unwrap();
-        let Some(access) = parts
-            .extract::<HeaderMap>()
-            .await
-            .unwrap()
-            .get("access_token")
-            .cloned()
-        else {
-            return Err((
-                StatusCode::UNAUTHORIZED,
-                PwmResponse::failure("access token was not provided", Some("try logging in"))
-                    .into(),
-            ));
-        };
-
-        // check that the access token hasn't expired
-
-        let access_messed_up = PwmResponse::failure("nice fucked up access token btw", None);
-        let access_messed_err = (StatusCode::UNAUTHORIZED, Json(access_messed_up));
-
-        let access_token_str = access.to_str().or(Err(access_messed_err.clone()))?;
-        let access_token_uuid =
-            Uuid::from_str(access_token_str).or(Err(access_messed_err.clone()))?;
-        let mut db_conn = db.acquire().await.or(Err(access_messed_err.clone()))?;
-        AccessToken::lookup(&access_token_uuid, &mut db_conn)
-            .await
-            .or(Err(access_messed_err))
-            .and_then(|x| {
-                x.ok_or((
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(PwmResponse::failure("invalid access token", None)),
-                ))
-            })
-            .map(LoggedInData)
-    }
-}
 
 pub async fn user_data(
-    State(db): State<PwmState>,
+    State(_): State<PwmState>,
     access: LoggedInData,
-) -> Result<Json<PwmResponse<Value>>, (StatusCode, Json<PwmResponse>)> {
-    let mut db_conn = db.acquire().await.or(Err(DATABASE_CONN_ERR))?;
-    access
-        .get_user(&mut db_conn)
-        .await
-        .or(Err(DATABASE_CONN_ERR))
-        .map(|x| {
-            // remove password field from response
-            let mut val = serde_json::to_value(x).unwrap();
-            *val.get_mut("password").unwrap() = Value::Null;
-            Json(PwmResponse::success(val))
-        })
+) -> Json<PwmResponse<InsensitiveUser>> {
+    // let mut db_conn = db.acquire().await.or(Err(DATABASE_CONN_ERR))?;
+    Json(PwmResponse::success(access.into_user().into()))
 }
-
 pub async fn login(
     State(db): State<PwmState>,
+    device: IdentifiableDevice,
     Json(log_data): Json<LoginData>,
-) -> Result<Json<PwmResponse<AccessToken>>, (StatusCode, Json<PwmResponse>)> {
-    let mut db_conn = db.acquire().await.or(Err(DATABASE_CONN_ERR))?;
+) -> Result<Json<PwmResponse<access_token::Model>>, (StatusCode, Json<PwmResponse>)> {
+    use crate::db::entities::prelude::*;
     let Ok(Some(existing_user)) =
-        User::lookup_username(log_data.username.as_str(), &mut db_conn).await
+        User::lookup_username(log_data.username.as_str(), db.deref()).await
     else {
         // unable to find user or db failure lol
         return Err((
@@ -135,11 +70,7 @@ pub async fn login(
     if existing_user.check_password(&log_data.password).is_ok() {
         // grant access
 
-        let token = existing_user.create_access_token(Duration::minutes(30));
-        token
-            .commit_to_db(&mut db_conn)
-            .await
-            .or(Err(DATABASE_CONN_ERR))?;
+        let token = existing_user.make_access_token(Duration::minutes(30), &device);
         return Ok(Json(PwmResponse::success(token)));
     }
     Err((
@@ -152,12 +83,11 @@ pub async fn login(
 }
 pub async fn register(
     State(db): State<PwmState>,
+    device: IdentifiableDevice,
     Json(reg_data): Json<RegisterData>,
-) -> Result<Json<PwmResponse<AccessToken>>, (StatusCode, Json<PwmResponse>)> {
-    let mut db_conn = db.acquire().await.or(Err(DATABASE_CONN_ERR))?;
-
+) -> Result<Json<PwmResponse<access_token::Model>>, (StatusCode, Json<PwmResponse>)> {
     // does the user already exist with that username? let's find out!
-    if let Ok(Some(_)) = User::lookup_username(reg_data.username.as_str(), &mut db_conn).await {
+    if let Ok(Some(_)) = User::lookup_username(reg_data.username.as_str(), db.deref()).await {
         // i guess they do
         return Err((
             StatusCode::BAD_REQUEST,
@@ -180,26 +110,30 @@ pub async fn register(
         )))?
         .to_string();
 
-    let new_user = User::new(
-        reg_data.username,
-        password,
-        reg_data.content_key,
-        reg_data.first_name,
-    );
+    let new_user = user::ActiveModel {
+        user_id: Set(Uuid::new_v4()),
+        username: Set(reg_data.username),
+        alias: Set(reg_data
+            .first_name
+            .unwrap_or_else(|| "Anonymous".to_string())),
 
-    db_conn
-        .transaction(|tx| {
-            Box::pin(async move {
-                new_user.commit_to_db(tx).await?;
-                let vault = Vault::new(&new_user);
-                let token = new_user.create_access_token(Duration::minutes(30));
-                token.commit_to_db(tx).await?;
-                vault.commit_to_db(tx).await?;
-                Ok::<Json<PwmResponse<AccessToken>>, sqlx::Error>(Json(PwmResponse::success(token)))
-            })
+        content_key: Set(reg_data.content_key),
+        user_created_at: Set(chrono::Utc::now().fixed_offset()),
+        password: Set(password),
+    };
+
+    db.transaction(|tx| {
+        Box::pin(async move {
+            let user_model = new_user.insert(tx).await?;
+            let vault = Vault::make_from_user(&user_model);
+            let token = user_model.make_access_token(Duration::minutes(30), &device);
+            let _ = vault.insert(tx).await?;
+            let token = token.into_active_model().insert(tx).await?;
+            Ok::<Json<PwmResponse<access_token::Model>>, DbErr>(Json(PwmResponse::success(token)))
         })
-        .await
-        .or(Err(DATABASE_CONN_ERR))
+    })
+    .await
+    .or(Err(DATABASE_CONN_ERR))
 }
 
 pub(crate) static ACCOUNT_ROUTER: LazyLock<Router<PwmState>> = LazyLock::new(|| {

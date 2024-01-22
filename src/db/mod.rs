@@ -1,12 +1,14 @@
-pub mod user;
-pub mod vault;
-use sqlx::{postgres::PgConnectOptions, ConnectOptions, PgPool};
+pub mod entities;
+pub mod models;
+use migration::MigratorTrait;
+// pub mod user;
+// pub mod vault;
+use sea_orm::{ConnectOptions, Database, DatabaseConnection, DbErr};
 
-//test
-pub async fn init_db(database_opts: PgConnectOptions) -> Result<PgPool, sqlx::Error> {
-    let pool = PgPool::connect_with(database_opts).await?;
+pub async fn init_db(database_opts: ConnectOptions) -> Result<DatabaseConnection, DbErr> {
+    let pool = Database::connect(database_opts).await?;
 
-    sqlx::migrate!().run(&pool).await?;
+    migration::Migrator::up(&pool, None);
 
     Ok(pool)
 }
