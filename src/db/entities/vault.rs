@@ -2,9 +2,9 @@
 
 use super::sea_orm_active_enums::VaultOwner;
 use sea_orm::entity::prelude::*;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
 #[sea_orm(table_name = "vault")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
