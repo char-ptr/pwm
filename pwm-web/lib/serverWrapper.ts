@@ -2,14 +2,6 @@ import { sc } from "./utils";
 
 class ServerWrapper {
   readonly url: string;
-  private m_accessToken?: string;
-  private m_user?: User;
-  get accessToken() {
-    return this.m_accessToken;
-  }
-  get user() {
-    return this.m_user;
-  }
 
   constructor(backend_url: string) {
     this.url = backend_url;
@@ -20,17 +12,36 @@ class ServerWrapper {
       access_token: token,
     };
   }
-  async validateAccessToken(token: string): Promise<boolean> {
+  async validateAccessToken(token: string): Promise<User | null> {
     const url = sc(this.url, "/account/me");
+    url.searchParams.append("access_token", token);
     const output: ServerResponse<User> = await fetch(url, {
+      next: {
+        // 29 minutes
+        tags: [`access_token:${token}`],
+        revalidate: 1740,
+      },
       headers: this.baseHeaders(token),
     }).then((r) => r.json());
     if (output.status === "Success") {
-      this.m_user = output.data;
-      this.m_accessToken = token;
-      return true;
+      return output.data;
     }
-    return false;
+    return null;
+  }
+  async register(username: string, alias: string | undefined, password: string, content_key: string): Promise<AccessToken | null> {
+    const url = sc(this.url, "/account/register");
+    console.log("jsn payload", JSON.stringify({ username, password, first_name: alias, content_key }))
+    const output: ServerResponse<AccessToken> = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username, password, first_name: alias, content_key }),
+    }).then((r) => r.json());
+    if (output.status === "Success") {
+      return output.data;
+    }
+    return null;
   }
   async login(username: string, password: string): Promise<AccessToken | null> {
     const url = sc(this.url, "/account/login");
@@ -42,7 +53,6 @@ class ServerWrapper {
       body: JSON.stringify({ username, password }),
     }).then((r) => r.json());
     if (output.status === "Success") {
-      this.m_accessToken = output.data.token;
       return output.data;
     }
     return null;
