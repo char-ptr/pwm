@@ -21,7 +21,7 @@ services:
         - path: ./cargo.toml
 
           action: rebuild
-        - path: ./migrations
+        - path: ./migration
           action: rebuild
         - path: ./src
           action: rebuild

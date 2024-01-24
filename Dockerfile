@@ -22,7 +22,7 @@ WORKDIR /app
 # source code into the container. Once built, copy the executable to an
 # output directory before the cache mounted /app/target is unmounted.
 RUN --mount=type=bind,source=src,target=src \
-  --mount=type=bind,source=migrations,target=migrations \
+  --mount=type=bind,source=migration,target=migration \
   --mount=type=bind,source=./.env,target=/app/.env \
   --mount=type=bind,source=Cargo.toml,target=Cargo.toml \
   --mount=type=bind,source=Cargo.lock,target=Cargo.lock \
