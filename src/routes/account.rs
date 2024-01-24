@@ -24,7 +24,7 @@ use crate::{
         },
         models::user_ex::InsensitiveUser,
     },
-    errors::DATABASE_CONN_ERR,
+    errors::{DATABASE_CONN_ERR, DB_ERR},
     extractors::{identifiable_device::IdentifiableDevice, logged_in::LoggedInData},
     PwmResponse, PwmState,
 };
@@ -71,6 +71,8 @@ pub async fn login(
         // grant access
 
         let token = existing_user.make_access_token(Duration::minutes(30), &device);
+        let tam = token.into_active_model();
+        let token = tam.insert(db.deref()).await.or(Err(DB_ERR))?;
         return Ok(Json(PwmResponse::success(token)));
     }
     Err((
