@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { tryLogin } from "./actions";
+import { tryRegister } from "./actions";
 import { pbkdf2Sync, pseudoRandomBytes } from "crypto";
 import aesjs from "aes-js";
 import bcrypt from "bcryptjs";
@@ -44,7 +44,7 @@ export default function RegisterForm() {
 
     // encrypt password for server
     const enc_pw = sha256.update(pw).hex();
-    const data = await tryLogin({ ...values, password: enc_pw, content_key: enc_ck_hex });
+    const data = await tryRegister({ ...values, password: enc_pw, content_key: enc_ck_hex, content_iv: Uint8Array.from(iv) });
     console.log("server response:", data);
   }
 

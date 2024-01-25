@@ -39,6 +39,7 @@ pub struct RegisterData {
     username: String,
     password: String,
     first_name: Option<String>,
+    content_iv: Vec<u8>,
     content_key: String,
 }
 
@@ -115,6 +116,7 @@ pub async fn register(
     let new_user = user::ActiveModel {
         user_id: Set(Uuid::new_v4()),
         username: Set(reg_data.username),
+        content_iv: Set(Some(reg_data.content_iv)),
         alias: Set(reg_data
             .first_name
             .unwrap_or_else(|| "Anonymous".to_string())),

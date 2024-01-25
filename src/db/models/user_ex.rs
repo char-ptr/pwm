@@ -24,6 +24,7 @@ pub struct InsensitiveUser {
     pub alias: String,
     pub username: String,
     pub content_key: String,
+    pub content_iv: Vec<u8>,
     pub user_created_at: DateTimeWithTimeZone,
 }
 impl From<user::Model> for InsensitiveUser {
@@ -33,6 +34,7 @@ impl From<user::Model> for InsensitiveUser {
             content_key: value.content_key,
             user_id: value.user_id,
             alias: value.alias,
+            content_iv: value.content_iv.unwrap_or_default(),
             user_created_at: value.user_created_at,
         }
     }

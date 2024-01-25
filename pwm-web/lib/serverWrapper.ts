@@ -28,7 +28,7 @@ class ServerWrapper {
     }
     return null;
   }
-  async register(username: string, alias: string | undefined, password: string, content_key: string): Promise<AccessToken | null> {
+  async register(username: string, alias: string | undefined, password: string, content_key: string, content_iv: Uint8Array): Promise<AccessToken | null> {
     const url = sc(this.url, "/account/register");
     console.log("jsn payload", JSON.stringify({ username, password, first_name: alias, content_key }))
     const output: ServerResponse<AccessToken> = await fetch(url, {
@@ -36,7 +36,7 @@ class ServerWrapper {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ username, password, first_name: alias, content_key }),
+      body: JSON.stringify({ username, password, first_name: alias, content_key, content_iv }),
     }).then((r) => r.json());
     if (output.status === "Success") {
       return output.data;

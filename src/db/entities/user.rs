@@ -14,6 +14,8 @@ pub struct Model {
     pub password: String,
     pub content_key: String,
     pub user_created_at: DateTimeWithTimeZone,
+    #[sea_orm(column_type = "Binary(BlobSize::Blob(None))", nullable)]
+    pub content_iv: Option<Vec<u8>>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
