@@ -14,6 +14,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { tryLogin } from "./actions";
+import { sha256 } from "js-sha256";
 
 export const loginFormSchema = z.object({
   username: z.string().min(3).max(20),
@@ -26,6 +27,8 @@ export default function LoginForm() {
   async function onSubmit(values: z.infer<typeof loginFormSchema>) {
     // ...
     console.log(values);
+    values.password = sha256.update(values.password).hex()
+
     const data = await tryLogin(values);
     console.log("server response:", data);
   }

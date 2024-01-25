@@ -17,6 +17,7 @@ import { tryLogin } from "./actions";
 import { pbkdf2Sync, pseudoRandomBytes } from "crypto";
 import aesjs from "aes-js";
 import bcrypt from "bcryptjs";
+import { sha256 } from "js-sha256";
 
 export const registerFormSchema = z.object({
   alias: z.string().min(3).max(20).optional(),
@@ -42,7 +43,7 @@ export default function RegisterForm() {
     const enc_ck_hex = aesjs.utils.hex.fromBytes(enc_content_key)
 
     // encrypt password for server
-    const enc_pw = bcrypt.hashSync(pw, values.username);
+    const enc_pw = sha256.update(pw).hex();
     const data = await tryLogin({ ...values, password: enc_pw, content_key: enc_ck_hex });
     console.log("server response:", data);
   }
