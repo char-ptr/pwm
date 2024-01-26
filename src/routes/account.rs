@@ -22,7 +22,7 @@ use crate::{
             prelude::{User, Vault},
             user,
         },
-        models::user_ex::InsensitiveUser,
+        models::user_ex::{InsensitiveUser, UserTokens},
     },
     errors::{DATABASE_CONN_ERR, DB_ERR},
     extractors::{identifiable_device::IdentifiableDevice, logged_in::LoggedInData},
@@ -40,9 +40,17 @@ pub struct RegisterData {
     password: String,
     first_name: Option<String>,
     content_iv: Vec<u8>,
+    password_salt: Vec<u8>,
     content_key: String,
 }
 
+pub async fn user_tokens(
+    State(_): State<PwmState>,
+    access: LoggedInData,
+) -> Json<PwmResponse<UserTokens>> {
+    // let mut db_conn = db.acquire().await.or(Err(DATABASE_CONN_ERR))?;
+    Json(PwmResponse::success(access.into_user().into()))
+}
 pub async fn user_data(
     State(_): State<PwmState>,
     access: LoggedInData,
@@ -117,6 +125,7 @@ pub async fn register(
         user_id: Set(Uuid::new_v4()),
         username: Set(reg_data.username),
         content_iv: Set(Some(reg_data.content_iv)),
+        password_salt: Set(Some(reg_data.password_salt)),
         alias: Set(reg_data
             .first_name
             .unwrap_or_else(|| "Anonymous".to_string())),
@@ -143,6 +152,7 @@ pub async fn register(
 pub(crate) static ACCOUNT_ROUTER: LazyLock<Router<PwmState>> = LazyLock::new(|| {
     Router::new()
         .route("/me", get(user_data))
+        .route("/tokens", get(user_tokens))
         .route("/login", post(login))
         .route("/register", post(register))
 });

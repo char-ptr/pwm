@@ -19,22 +19,34 @@ use crate::{
 
 #[derive(DerivePartialModel, FromQueryResult, Serialize, Clone, Debug)]
 #[sea_orm(entity = "User")]
+pub struct UserTokens {
+    pub content_key: String,
+    pub content_iv: Vec<u8>,
+    pub password_salt: Vec<u8>,
+}
+impl From<user::Model> for UserTokens {
+    fn from(value: user::Model) -> Self {
+        Self {
+            content_key: value.content_key,
+            content_iv: value.content_iv.unwrap(),
+            password_salt: value.password_salt.unwrap(),
+        }
+    }
+}
+#[derive(DerivePartialModel, FromQueryResult, Serialize, Clone, Debug)]
+#[sea_orm(entity = "User")]
 pub struct InsensitiveUser {
     pub user_id: Uuid,
     pub alias: String,
     pub username: String,
-    pub content_key: String,
-    pub content_iv: Vec<u8>,
     pub user_created_at: DateTimeWithTimeZone,
 }
 impl From<user::Model> for InsensitiveUser {
     fn from(value: user::Model) -> Self {
         Self {
             username: value.username,
-            content_key: value.content_key,
             user_id: value.user_id,
             alias: value.alias,
-            content_iv: value.content_iv.unwrap_or_default(),
             user_created_at: value.user_created_at,
         }
     }

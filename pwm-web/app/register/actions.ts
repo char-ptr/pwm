@@ -5,8 +5,8 @@ import { sc } from "@/lib/utils";
 import { cookies } from "next/headers";
 import sw from "@/lib/serverWrapper";
 
-export async function tryRegister(data: z.infer<typeof registerFormSchema> & { content_key: string, content_iv: Uint8Array }) {
-  const access_maybe = await sw.register(data.username, data.alias, data.password, data.content_key, data.content_iv)
+export async function tryRegister(data: z.infer<typeof registerFormSchema> & RegisterPayload) {
+  const access_maybe = await sw.register(data)
   if (access_maybe) {
     const expire_at = new Date(access_maybe.expires_at);
     cookies().set({

@@ -19,10 +19,23 @@ interface AccessToken {
   user_agent: string;
   expires_at: string;
 }
+interface UserTokens {
+  password_salt: Uint8Array;
+  content_key: string;
+  content_iv: Uint8Array;
+}
 interface User {
   user_id: string;
   username: string;
   alias: string;
-  content_key: string;
   user_created_at: string;
+}
+interface RegisterPayload {
+  username: string;
+  /// aka alias
+  first_name?: string;
+  password: string;
+  password_salt: Uint8Array;
+  content_key: string;
+  content_iv: Uint8Array
 }

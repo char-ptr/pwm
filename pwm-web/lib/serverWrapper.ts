@@ -12,13 +12,13 @@ class ServerWrapper {
       access_token: token,
     };
   }
-  async validateAccessToken(token: string): Promise<User | null> {
-    const url = sc(this.url, "/account/me");
+  async tokens(token: string): Promise<UserTokens | null> {
+    const url = sc(this.url, "/account/tokens");
     url.searchParams.append("access_token", token);
-    const output: ServerResponse<User> = await fetch(url, {
+    const output: ServerResponse<UserTokens> = await fetch(url, {
       next: {
         // 29 minutes
-        tags: [`access_token:${token}`],
+        tags: [`user_tokens:${token}`],
         revalidate: 1740,
       },
       headers: this.baseHeaders(token),
@@ -28,15 +28,30 @@ class ServerWrapper {
     }
     return null;
   }
-  async register(username: string, alias: string | undefined, password: string, content_key: string, content_iv: Uint8Array): Promise<AccessToken | null> {
+  async validateAccessToken(token: string): Promise<User | null> {
+    const url = sc(this.url, "/account/me");
+    url.searchParams.append("access_token", token);
+    const output: ServerResponse<User> = await fetch(url, {
+      next: {
+        // 29 minutes
+        tags: [`access_token:${token} `],
+        revalidate: 1740,
+      },
+      headers: this.baseHeaders(token),
+    }).then((r) => r.json());
+    if (output.status === "Success") {
+      return output.data;
+    }
+    return null;
+  }
+  async register(payload: RegisterPayload): Promise<AccessToken | null> {
     const url = sc(this.url, "/account/register");
-    console.log("jsn payload", JSON.stringify({ username, password, first_name: alias, content_key }))
     const output: ServerResponse<AccessToken> = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ username, password, first_name: alias, content_key, content_iv }),
+      body: JSON.stringify(payload),
     }).then((r) => r.json());
     if (output.status === "Success") {
       return output.data;

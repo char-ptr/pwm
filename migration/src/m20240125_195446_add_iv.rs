@@ -12,6 +12,7 @@ impl MigrationTrait for Migration {
                 Table::alter()
                     .table(User::Table)
                     .add_column_if_not_exists(ColumnDef::new(User::ContentIv).binary())
+                    .add_column_if_not_exists(ColumnDef::new(User::PasswordSalt).binary())
                     .to_owned(),
             )
             .await
@@ -25,6 +26,7 @@ impl MigrationTrait for Migration {
                 Table::alter()
                     .table(User::Table)
                     .drop_column(User::ContentIv)
+                    .drop_column(User::PasswordSalt)
                     .to_owned(),
             )
             .await
@@ -38,6 +40,7 @@ enum User {
     Alias,
     Username,
     Password,
+    PasswordSalt,
     ContentKey,
     ContentIv,
     UserCreatedAt,

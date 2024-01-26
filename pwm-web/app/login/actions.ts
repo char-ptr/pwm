@@ -5,7 +5,7 @@ import { sc } from "@/lib/utils";
 import { cookies } from "next/headers";
 import sw from "@/lib/serverWrapper";
 
-export async function tryLogin(data: z.infer<typeof loginFormSchema>) {
+export async function tryLogin(data: z.infer<typeof loginFormSchema>): Promise<(AccessToken & { tokens: UserTokens | null }) | null> {
   const access_maybe = await sw.login(data.username, data.password);
   if (access_maybe) {
     const expire_at = new Date(access_maybe.expires_at);
@@ -15,6 +15,7 @@ export async function tryLogin(data: z.infer<typeof loginFormSchema>) {
       name: "access_token",
       value: access_maybe.token,
     });
+    return { ...access_maybe, tokens: await sw.tokens(access_maybe.token) }
   }
   return access_maybe;
 }
