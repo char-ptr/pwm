@@ -6,6 +6,7 @@ import { useLoggedIn } from "@/lib/hooks/checkLogin";
 import { DerivedPw } from "@/lib/state/key";
 import { useAtom } from "jotai";
 import { redirect } from "next/navigation";
+import { unknown } from "zod";
 type Unwrap<T> =
   T extends Promise<infer U> ? U :
   T extends (...args: unknown[]) => Promise<infer U> ? U :
@@ -18,5 +19,5 @@ export function IntrnLoginPage({ user }: { user: Unwrap<ReturnType<typeof useLog
     redirect("/dash");
   }
 
-  return <LoginForm />
+  return <LoginForm user={user?.user ?? undefined} />
 }

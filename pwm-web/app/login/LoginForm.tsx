@@ -23,7 +23,7 @@ export const loginFormSchema = z.object({
   username: z.string().min(3).max(20),
   password: z.string().min(8).max(100),
 });
-export default function LoginForm() {
+export default function LoginForm({ user }: { user?: User }) {
   const [derived_key, setDerivedKey] = useAtom(DerivedPw);
   const form = useForm<z.infer<typeof loginFormSchema>>({
     resolver: zodResolver(loginFormSchema),
@@ -49,12 +49,14 @@ export default function LoginForm() {
       >
         <FormField
           control={form.control}
+          defaultValue={user?.username}
+          // disabled={!!user}
           name="username"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Username</FormLabel>
-              <FormControl>
-                <Input className="text-black" placeholder="admin" {...field} />
+              <FormControl >
+                <Input disabled={!!user} className={" text-black"} placeholder="admin" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
