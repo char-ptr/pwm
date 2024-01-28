@@ -10,7 +10,7 @@ export async function useLoggedIn() {
   }
   return {};
 }
-export async function useGetTokens(access_token: string) {
+export async function useGetTokens(access_token?: string) {
   if (access_token) {
     const resp = await sw.tokens(access_token);
     return resp;

@@ -1,4 +1,4 @@
 #! /usr/bin/sh
 docker compose up db -d
-cargo sqlx migrate run
+sea migrate
 docker compose watch

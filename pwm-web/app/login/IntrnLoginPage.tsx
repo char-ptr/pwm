@@ -16,7 +16,7 @@ export function IntrnLoginPage({ user }: { user: Unwrap<ReturnType<typeof useLog
   useHydrateAtoms([[DerivedPw, Uint8Array.of()]])
   const [derived_key, setDerivedKey] = useAtom(DerivedPw);
   if (user && derived_key?.length) {
-    redirect("/dash");
+    return redirect("/dash");
   }
 
   return <LoginForm user={user?.user ?? undefined} />
