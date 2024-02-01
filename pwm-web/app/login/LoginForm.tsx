@@ -33,6 +33,7 @@ export default function LoginForm({ user }: { user?: User }) {
     console.log(values);
     values.password = sha256.update(values.password).hex();
 
+    window.localStorage.setItem("keyh", values.password);
     const data = await tryLogin(values);
     console.log("server response:", data);
     if (data?.tokens?.password_salt) {
@@ -50,13 +51,12 @@ export default function LoginForm({ user }: { user?: User }) {
         <FormField
           control={form.control}
           defaultValue={user?.username}
-          // disabled={!!user}
           name="username"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Username</FormLabel>
               <FormControl >
-                <Input disabled={!!user} className={" text-black"} placeholder="admin" {...field} />
+                <Input className={""} placeholder="admin" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -71,7 +71,7 @@ export default function LoginForm({ user }: { user?: User }) {
               <FormControl>
                 <Input
                   type="password"
-                  className="text-black"
+                  className=""
                   placeholder="xyz"
                   {...field}
                 />
@@ -81,7 +81,7 @@ export default function LoginForm({ user }: { user?: User }) {
           )}
         />
         <div className="mr-auto">
-          <Button className="bg-pink-600 hover:bg-pink-400" type="submit">
+          <Button className="dark:bg-pink-600 dark:hover:bg-pink-400" type="submit">
             Submit
           </Button>
         </div>
