@@ -17,11 +17,13 @@ export default async function DashPage() {
       <KeyChecker tokens={tokens} />
       <UnlockModal tokens={tokens} />
       <Hider>
-        <ResizablePanelGroup direction="horizontal" >
-          <ResizablePanel className="p-5" >item list</ResizablePanel>
-          <ResizableHandle className="bg-white dark:bg-black" />
-          <ResizablePanel className="p-5">item info</ResizablePanel>
-        </ResizablePanelGroup>
+        <Suspense>
+          <ResizablePanelGroup direction="horizontal" >
+            <ResizablePanel className="p-5" >item list</ResizablePanel>
+            <ResizableHandle className="bg-white dark:bg-black" />
+            <ResizablePanel className="p-5">item info</ResizablePanel>
+          </ResizablePanelGroup>
+        </Suspense>
       </Hider>
     </div>
   );
