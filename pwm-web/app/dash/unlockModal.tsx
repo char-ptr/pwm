@@ -4,7 +4,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useAtom } from "jotai";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useLocalStorage } from "@uidotdev/usehooks"
 import { Input } from "@/components/ui/input";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
