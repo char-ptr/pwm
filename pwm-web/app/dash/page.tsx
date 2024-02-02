@@ -6,6 +6,7 @@ import { SearchBar } from "./searchbar";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { UnlockModal } from "./unlockModal";
 import { Hider } from "./hider";
+import { NewItemModal } from "./newItemModal";
 
 export default async function DashPage() {
   const { user, access_token } = await useLoggedIn();
@@ -16,16 +17,16 @@ export default async function DashPage() {
     <div className="h-full" >
       <KeyChecker tokens={tokens} />
       <UnlockModal tokens={tokens} />
+      <NewItemModal access={access_token} />
       <Hider>
-        <Suspense>
-          <ResizablePanelGroup direction="horizontal" >
-            <ResizablePanel className="p-5" >item list</ResizablePanel>
-            <ResizableHandle className="bg-white dark:bg-black" />
-            <ResizablePanel className="p-5">item info</ResizablePanel>
-          </ResizablePanelGroup>
-        </Suspense>
+        <ResizablePanelGroup direction="horizontal" >
+          <ResizablePanel className="p-5" >item list</ResizablePanel>
+          <ResizableHandle className="bg-white dark:bg-black" />
+          <ResizablePanel className="p-5">item info</ResizablePanel>
+        </ResizablePanelGroup>
       </Hider>
     </div>
   );
 
 }
+
