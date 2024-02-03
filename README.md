@@ -41,3 +41,6 @@ create a .env with
 DATABASE_URL=postgres://pgusername:pgpassword@pghost:pgport/pgdatabase
 ```
 replacing (pg*) with corresponding data. you should be able to run / build
+
+## PREVIEW (early stage)
+![dash](https://github.com/pozm/pwm/assets/44528100/98230f4d-fa85-440f-bb66-b06a2b0e810e)
