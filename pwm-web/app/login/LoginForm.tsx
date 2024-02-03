@@ -31,13 +31,14 @@ export default function LoginForm({ user }: { user?: User }) {
   async function onSubmit(values: z.infer<typeof loginFormSchema>) {
     // ...
     console.log(values);
+    const old_pw = values.password;
     values.password = sha256.update(values.password).hex();
 
     window.localStorage.setItem("keyh", values.password);
     const data = await tryLogin(values);
     console.log("server response:", data);
     if (data?.tokens?.password_salt) {
-      const derived_key = createDerivedKey(values.password, data.tokens.password_salt);
+      const derived_key = createDerivedKey(old_pw, data.tokens.password_salt);
       setDerivedKey(Uint8Array.from(derived_key.out_key));
     }
   }
@@ -55,7 +56,7 @@ export default function LoginForm({ user }: { user?: User }) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Username</FormLabel>
-              <FormControl >
+              <FormControl>
                 <Input className={""} placeholder="admin" {...field} />
               </FormControl>
               <FormMessage />
@@ -81,7 +82,10 @@ export default function LoginForm({ user }: { user?: User }) {
           )}
         />
         <div className="mr-auto">
-          <Button className="dark:bg-pink-600 dark:hover:bg-pink-400" type="submit">
+          <Button
+            className="dark:bg-pink-600 dark:hover:bg-pink-400"
+            type="submit"
+          >
             Submit
           </Button>
         </div>

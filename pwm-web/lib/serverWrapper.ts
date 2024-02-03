@@ -1,6 +1,6 @@
 import { sc } from "./utils";
 
-const COOKIE_EXPIRE = 60 * 28;
+export const COOKIE_EXPIRE = 60 * 28;
 class ServerWrapper {
   readonly url: string;
 
