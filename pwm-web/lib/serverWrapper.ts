@@ -1,5 +1,6 @@
 import { sc } from "./utils";
 
+const COOKIE_EXPIRE = 60 * 28;
 class ServerWrapper {
   readonly url: string;
 
@@ -12,6 +13,22 @@ class ServerWrapper {
       access_token: token,
     };
   }
+  async items(token: string, folder_id?: string): Promise<VaultItem[] | null> {
+    const url = sc(this.url, "/vault/items");
+    url.searchParams.append("access_token", token);
+    const output: ServerResponse<VaultItem[]> = await fetch(url, {
+      next: {
+        // 29 minutes
+        // tags: [`user_items:${folder_id}:${token}`],
+        // revalidate: COOKIE_EXPIRE,
+      },
+      headers: this.baseHeaders(token),
+    }).then((r) => r.json());
+    if (output.status === "Success") {
+      return output.data;
+    }
+    return null;
+  }
   async tokens(token: string): Promise<UserTokens | null> {
     const url = sc(this.url, "/account/tokens");
     url.searchParams.append("access_token", token);
@@ -19,7 +36,7 @@ class ServerWrapper {
       next: {
         // 29 minutes
         tags: [`user_tokens:${token}`],
-        revalidate: 1740,
+        revalidate: COOKIE_EXPIRE,
       },
       headers: this.baseHeaders(token),
     }).then((r) => r.json());
@@ -35,7 +52,7 @@ class ServerWrapper {
       next: {
         // 29 minutes
         tags: [`access_token:${token} `],
-        revalidate: 1740,
+        revalidate: COOKIE_EXPIRE,
       },
       headers: this.baseHeaders(token),
     }).then((r) => r.json());
@@ -86,5 +103,5 @@ class ServerWrapper {
     return null;
   }
 }
-const sw = new ServerWrapper(process.env.backend_url as string);
+const sw = new ServerWrapper(process.env.NEXT_PUBLIC_backend_url as string);
 export default sw;
