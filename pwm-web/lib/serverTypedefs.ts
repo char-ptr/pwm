@@ -39,3 +39,14 @@ interface RegisterPayload {
   content_key: string;
   content_iv: Uint8Array
 }
+interface VaultItem {
+  item_id: string,
+  vault_id: string,
+  folder_id?: string,
+  name: string,
+  username?: string,
+  password?: string,
+  notes?: string,
+  custom_fields?: string,
+  icon_url?: string,
+}

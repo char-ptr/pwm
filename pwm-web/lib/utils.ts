@@ -9,3 +9,6 @@ export function sc(base: string, ...urlPaths: string[]) {
   baseURL.pathname = urlPaths.join("/");
   return baseURL;
 }
+export function emptyUuid() {
+  return "00000000-0000-0000-0000-000000000000";
+}

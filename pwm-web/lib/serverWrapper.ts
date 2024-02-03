@@ -58,6 +58,19 @@ class ServerWrapper {
     }
     return null;
   }
+  async addItem(token: string, payload: VaultItem): Promise<VaultItem | null> {
+    const url = sc(this.url, "/vault/items");
+    const output: ServerResponse<VaultItem> = await fetch(url, {
+      method: "POST",
+      headers: this.baseHeaders(token),
+      body: JSON.stringify(payload),
+    }).then((r) => r.json());
+    console.log(output);
+    if (output.status === "Success") {
+      return output.data;
+    }
+    return null;
+  }
   async login(username: string, password: string): Promise<AccessToken | null> {
     const url = sc(this.url, "/account/login");
     const output: ServerResponse<AccessToken> = await fetch(url, {
