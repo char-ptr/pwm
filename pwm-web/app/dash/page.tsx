@@ -21,15 +21,15 @@ export default async function DashPage() {
       <KeyChecker tokens={tokens} />
       <UnlockModal tokens={tokens} />
       <NewItemModal access={access_token} />
-      <Hider>
-        <ResizablePanelGroup direction="horizontal">
-          <ResizablePanel className="p-5">
-            <VaultItemList token={access_token} />
-          </ResizablePanel>
-          <ResizableHandle className="bg-white dark:bg-black" />
-          <ResizablePanel className="p-5">item info</ResizablePanel>
-        </ResizablePanelGroup>
-      </Hider>
+      {/* <Hider> */}
+      <ResizablePanelGroup direction="horizontal">
+        <ResizablePanel className="p-5">
+          <VaultItemList token={access_token} />
+        </ResizablePanel>
+        <ResizableHandle className="bg-white dark:bg-black" />
+        <ResizablePanel className="p-5">item info</ResizablePanel>
+      </ResizablePanelGroup>
+      {/* </Hider> */}
     </div>
   );
 }

@@ -16,7 +16,7 @@ export function ClientVaultItems({ serverItems, token }: Props) {
   });
 
   return (
-    <>
+    <div className="flex flex-col gap-4">
       {clientItems.isLoading ? (
         <p>loading..</p>
       ) : (
@@ -24,6 +24,6 @@ export function ClientVaultItems({ serverItems, token }: Props) {
           <ClientVaultItem key={item.item_id} item={item} />
         ))
       )}
-    </>
+    </div>
   );
 }

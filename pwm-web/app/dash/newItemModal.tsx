@@ -6,7 +6,6 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogPortal,
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
@@ -30,11 +29,13 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { tryAddItem } from "./actions";
 import { useQueryClient } from "@tanstack/react-query";
+import { Textarea } from "@/components/ui/textarea";
 const itemSchema = z.object({
   password: z.string().min(8).max(100),
   username: z.string().min(3),
   name: z.string().min(3),
-  notes: z.string().max(1000).nullish(),
+  icon_url: z.string().url(),
+  notes: z.string().max(1000).default(""),
   vault_id: z.string().max(1000).nullish(),
   item_id: z.string().max(1000).nullish(),
 });
@@ -51,6 +52,9 @@ export function NewItemModal({ access }: { access: string }) {
     values.password = encryptWithConKey(contentKey, values.password);
     values.name = encryptWithConKey(contentKey, values.name);
     values.username = encryptWithConKey(contentKey, values.username);
+    const ddg_ico_p1 = new URL(values.icon_url).hostname;
+    const ddg_ico = `https://icons.duckduckgo.com/ip3/${ddg_ico_p1}.ico`;
+    values.icon_url = encryptWithConKey(contentKey, ddg_ico);
     values.vault_id = emptyUuid();
     values.item_id = emptyUuid();
 
@@ -68,6 +72,7 @@ export function NewItemModal({ access }: { access: string }) {
   useEffect(() => {
     setWaitClient(true);
   }, []);
+  // you kinda have to do this according to the react-hook-form documentation
   useEffect(() => {
     if (resetState) {
       form.reset();
@@ -78,7 +83,7 @@ export function NewItemModal({ access }: { access: string }) {
     <>
       {waitClient && (
         <Dialog onOpenChange={setDisplay} open={display}>
-          <DialogContent>
+          <DialogContent className="max-w-xl">
             <DialogHeader>
               <DialogTitle>New Item</DialogTitle>
               <DialogDescription>
@@ -88,13 +93,13 @@ export function NewItemModal({ access }: { access: string }) {
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-8"
+                className="grid grid-cols-2 gap-8"
               >
                 <FormField
                   control={form.control}
                   name="name"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="col-span-2">
                       <FormLabel>Name</FormLabel>
                       <FormControl>
                         <Input type="text" placeholder="name..." {...field} />
@@ -111,7 +116,7 @@ export function NewItemModal({ access }: { access: string }) {
                   name="username"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Login Username</FormLabel>
+                      <FormLabel>Username</FormLabel>
                       <FormControl>
                         <Input
                           type="text"
@@ -146,7 +151,41 @@ export function NewItemModal({ access }: { access: string }) {
                     </FormItem>
                   )}
                 />
-                <DialogFooter>
+                <FormField
+                  control={form.control}
+                  name="icon_url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Website</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="url"
+                          placeholder="Website url.."
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>URL to the website.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem className="col-span-2">
+                      <FormLabel>Notes</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Notes..." {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Any notes you'd like to add?
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <DialogFooter className="col-span-2">
                   <Button type="submit">Add!</Button>
                 </DialogFooter>
               </form>
