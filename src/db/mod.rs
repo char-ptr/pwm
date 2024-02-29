@@ -14,6 +14,7 @@ pub async fn init_db(mut database_opts: ConnectOptions) -> Result<DatabaseConnec
     let pool = Database::connect(new_db_opts.clone()).await?;
 
     migration::Migrator::up(&pool, None).await?;
+    //a
 
     Ok(pool)
 }
