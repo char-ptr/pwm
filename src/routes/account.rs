@@ -135,18 +135,26 @@ pub async fn register(
         password: Set(password),
     };
 
-    db.transaction(|tx| {
-        Box::pin(async move {
-            let user_model = new_user.insert(tx).await?;
-            let vault = Vault::make_from_user(&user_model);
-            let token = user_model.make_access_token(Duration::minutes(30), &device);
-            let _ = vault.insert(tx).await?;
-            let token = token.into_active_model().insert(tx).await?;
-            Ok::<Json<PwmResponse<access_token::Model>>, DbErr>(Json(PwmResponse::success(token)))
+    let ret = db
+        .transaction(|tx| {
+            Box::pin(async move {
+                let user_model = new_user.insert(tx).await?;
+                let vault = Vault::make_from_user(&user_model);
+                let token = user_model.make_access_token(Duration::minutes(30), &device);
+                let _ = vault.insert(tx).await?;
+                let token = token.into_active_model().insert(tx).await?;
+                Ok::<Json<PwmResponse<access_token::Model>>, DbErr>(Json(PwmResponse::success(
+                    token,
+                )))
+            })
         })
-    })
-    .await
-    .or(Err(DATABASE_CONN_ERR))
+        .await
+        .map_err(|x| {
+            tracing::error!("error creating user: {}", x);
+            DB_ERR
+        })?;
+
+    Ok(ret)
 }
 
 pub(crate) static ACCOUNT_ROUTER: LazyLock<Router<PwmState>> = LazyLock::new(|| {
