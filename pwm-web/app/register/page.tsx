@@ -2,14 +2,13 @@ import BackgroundImage from "@/assets/lbk2.png";
 import RegisterForm, { registerFormSchema } from "./RegisterForm";
 import * as z from "zod";
 import { cookies } from "next/headers";
-import sw from "@/lib/serverWrapper";
 import { useLoggedIn } from "@/lib/hooks/checkLogin";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 export default async function LoginPage() {
   const user = await useLoggedIn();
   if (user.user) {
-    console.log("already logged in ", user.user)
+    console.log("already logged in ", user.user);
     redirect("/dash");
   }
   return (

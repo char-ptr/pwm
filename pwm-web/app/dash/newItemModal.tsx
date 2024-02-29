@@ -179,7 +179,7 @@ export function NewItemModal({ access }: { access: string }) {
                         <Textarea placeholder="Notes..." {...field} />
                       </FormControl>
                       <FormDescription>
-                        Any notes you'd like to add?
+                        Any notes you&apos;d like to add?
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
