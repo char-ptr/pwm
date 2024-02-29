@@ -1,4 +1,4 @@
-use std::{fmt::Debug, ops::Deref, str::FromStr, sync::LazyLock};
+use std::{fmt::Debug, ops::Deref, sync::LazyLock};
 
 use axum::{
     extract::State,
@@ -11,7 +11,7 @@ use scrypt::{
     password_hash::{rand_core::OsRng, PasswordHasher, SaltString},
     Scrypt,
 };
-use sea_orm::{ActiveModelTrait, DbErr, IntoActiveModel, Set, TransactionTrait, TryIntoModel};
+use sea_orm::{ActiveModelTrait, DbErr, IntoActiveModel, Set, TransactionTrait};
 use serde::Deserialize;
 use tracing::instrument;
 use uuid::Uuid;
@@ -25,7 +25,7 @@ use crate::{
         },
         models::user_ex::{InsensitiveUser, UserTokens},
     },
-    errors::{DATABASE_CONN_ERR, DB_ERR},
+    errors::{DB_ERR},
     extractors::{identifiable_device::IdentifiableDevice, logged_in::LoggedInData},
     PwmResponse, PwmState,
 };

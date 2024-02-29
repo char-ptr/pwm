@@ -22,10 +22,10 @@ where
     S: Send + Sync + core::fmt::Debug,
 {
     type Rejection = (StatusCode, Json<PwmResponse>);
-    #[instrument(skip(parts, state))]
+    #[instrument(skip(parts, _state))]
     async fn from_request_parts(
         parts: &mut axum::http::request::Parts,
-        state: &S,
+        _state: &S,
     ) -> Result<Self, Self::Rejection> {
         let Ok(SecureClientIp(ip)) = parts.extract().await else {
             return Err((

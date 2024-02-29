@@ -19,7 +19,7 @@ pub async fn test_route() -> &'static str {
     "server works"
 }
 
-pub fn construct_router(db: DbConn, SecureipSource: SecureClientIpSource) -> Router {
+pub fn construct_router(db: DbConn, secure_ip_source: SecureClientIpSource) -> Router {
     let cors = CorsLayer::new()
         .allow_origin(Any)
         .allow_headers([
@@ -34,7 +34,7 @@ pub fn construct_router(db: DbConn, SecureipSource: SecureClientIpSource) -> Rou
         .nest("/vault", VAULT_ROUTER.clone())
         .route("/test", get(test_route))
         .layer(cors)
-        .layer(SecureipSource.into_extension())
+        .layer(secure_ip_source.into_extension())
         .layer(TraceLayer::new_for_http())
         .with_state(crate::PwmState(db))
 }

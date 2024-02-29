@@ -6,10 +6,10 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use futures::{stream::FuturesUnordered, FutureExt, StreamExt};
+use futures::{stream::FuturesUnordered, StreamExt};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, ConnectionTrait, DeriveIntoActiveModel, DerivePartialModel,
-    EntityTrait, IntoActiveModel, IntoActiveValue, LoaderTrait, QueryFilter, Set, Statement,
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, EntityTrait, IntoActiveModel, LoaderTrait,
+    QueryFilter, Set, Statement,
 };
 use serde_json::Value;
 use tokio::pin;
@@ -116,7 +116,7 @@ pub async fn new_item(
         item_id: Set(uuid::Uuid::new_v4()),
     };
     let t_db = &db.clone();
-    let mut websites_stream = FuturesUnordered::new();
+    let websites_stream = FuturesUnordered::new();
     for x in item.websites.iter() {
         let fut = vault_website_entry::ActiveModel {
             uri: Set(x.uri.clone()),
@@ -148,11 +148,9 @@ pub async fn new_item(
         ret_item.attach_websites(websites),
     )))
 }
+type RetLong = Result<Json<PwmResponse<Vec<vault_item::Model>>>, (StatusCode, Json<PwmResponse>)>;
 #[instrument]
-pub async fn list_root_items(
-    State(db): State<PwmState>,
-    access: LoggedInData,
-) -> Result<Json<PwmResponse<Vec<vault_item::Model>>>, (StatusCode, Json<PwmResponse>)> {
+pub async fn list_root_items(State(db): State<PwmState>, access: LoggedInData) -> RetLong {
     let vault = vault::Entity::find()
         .filter(vault::Column::UserId.eq(access.user_id))
         .all(db.deref())
