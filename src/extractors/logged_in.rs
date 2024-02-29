@@ -7,6 +7,7 @@ use axum::{
     Json, RequestPartsExt,
 };
 use sea_orm::{DbConn, DbErr, EntityTrait};
+use tracing::instrument;
 use uuid::Uuid;
 
 use crate::{
@@ -20,6 +21,7 @@ pub struct LoggedInData {
     user: user::Model,
 }
 impl LoggedInData {
+    #[instrument(skip(db))]
     pub async fn from_token_id(token: &Uuid, db: &DbConn) -> Result<Option<Self>, DbErr> {
         tracing::debug!("constructing logged in data from token[{}]", token);
         access_token::Entity::find_by_id(*token)
@@ -70,6 +72,7 @@ where
 {
     type Rejection = (StatusCode, Json<PwmResponse>);
 
+    #[instrument(skip(parts, state))]
     async fn from_request_parts(
         parts: &mut axum::http::request::Parts,
         state: &S,

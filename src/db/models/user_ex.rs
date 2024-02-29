@@ -10,6 +10,7 @@ use sea_orm::{
     FromQueryResult, QueryFilter,
 };
 use serde::Serialize;
+use tracing::{debug, instrument};
 use uuid::Uuid;
 
 use crate::{
@@ -53,6 +54,7 @@ impl From<user::Model> for InsensitiveUser {
 }
 
 impl User {
+    #[instrument]
     pub async fn lookup_username(
         username: &str,
         db: &DbConn,
@@ -64,6 +66,7 @@ impl User {
     }
 }
 impl user::Model {
+    #[instrument]
     pub fn make_access_token(
         &self,
         dur: Duration,
@@ -77,10 +80,22 @@ impl user::Model {
             user_agent: device.user_agent.to_string(),
         }
     }
-    pub fn check_password(&self, other: &str) -> Result<(), ()> {
-        let hash = PasswordHash::new(&self.password).map_err(|_| ())?;
-        Scrypt
-            .verify_password(other.as_bytes(), &hash)
-            .map_err(|_| ())
+    #[instrument]
+    pub async fn check_password(&self, other: &str) -> Result<(), ()> {
+        // i think this is the best we can get. if i don't clone we have to block every other
+        // thread. cloning without arc would require two full clones. i much prefer doing one and
+        // then cloning the arc.
+        let otherc = std::sync::Arc::new(other.to_string());
+        let pwr = std::sync::Arc::new(self.password.clone());
+        tokio::task::spawn_blocking(move || {
+            let otherb = otherc.clone();
+            let otherb = otherb.as_bytes();
+            let pwc = pwr.clone();
+            let hash = PasswordHash::new(&pwc).map_err(|_| ())?;
+            debug!("verifying hash : {:?}", otherb);
+            Scrypt.verify_password(otherb, &hash).map_err(|_| ())
+        })
+        .await
+        .map_err(|_| ())?
     }
 }

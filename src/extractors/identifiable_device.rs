@@ -6,6 +6,7 @@ use axum::{
 };
 use axum_client_ip::SecureClientIp;
 use axum_extra::{headers::UserAgent, TypedHeader};
+use tracing::instrument;
 
 use crate::{PwmResponse, PwmState};
 
@@ -21,6 +22,7 @@ where
     S: Send + Sync + core::fmt::Debug,
 {
     type Rejection = (StatusCode, Json<PwmResponse>);
+    #[instrument(skip(parts, state))]
     async fn from_request_parts(
         parts: &mut axum::http::request::Parts,
         state: &S,

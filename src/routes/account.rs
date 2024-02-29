@@ -80,7 +80,11 @@ pub async fn login(
             )),
         ));
     };
-    if existing_user.check_password(&log_data.password).is_ok() {
+    if existing_user
+        .check_password(&log_data.password)
+        .await
+        .is_ok()
+    {
         // grant access
 
         let token = existing_user.make_access_token(Duration::minutes(30), &device);
