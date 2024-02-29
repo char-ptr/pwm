@@ -4,7 +4,7 @@ import { twMerge } from "tailwind-merge";
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
-export function sc(base: string, ...urlPaths: string[]) {
+export function sc(base: string | URL, ...urlPaths: string[]) {
   const baseURL = new URL(base);
   baseURL.pathname = urlPaths.join("/");
   return baseURL;

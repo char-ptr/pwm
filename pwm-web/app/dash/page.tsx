@@ -1,15 +1,17 @@
-import { useGetTokens, useLoggedIn } from "@/lib/hooks/checkLogin";
-import { redirect } from "next/navigation";
-import { KeyChecker } from "./KeyChecker";
+import { VaultItemList } from "@/components/app/vaultItemList";
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
-import { UnlockModal } from "./unlockModal";
+import { useGetTokens, useLoggedIn } from "@/lib/hooks/checkLogin";
+import { redirect } from "next/navigation";
+import { KeyChecker } from "./KeyChecker";
 import { Hider } from "./hider";
 import { NewItemModal } from "./newItemModal";
-import { VaultItemList } from "@/components/app/vaultItemList";
+import { UnlockModal } from "./unlockModal";
+import { Suspense } from "react";
+import ClientVaultRender from "@/components/app/clientVaultRender";
 
 export default async function DashPage() {
   const { user, access_token } = await useLoggedIn();
@@ -24,10 +26,14 @@ export default async function DashPage() {
       {/* <Hider> */}
       <ResizablePanelGroup direction="horizontal">
         <ResizablePanel className="p-5">
-          <VaultItemList token={access_token} />
+          <Suspense>
+            <VaultItemList token={access_token} />
+          </Suspense>
         </ResizablePanel>
         <ResizableHandle className="bg-white dark:bg-black" />
-        <ResizablePanel className="p-5">item info</ResizablePanel>
+        <ResizablePanel className="p-5">
+          <ClientVaultRender a="test" />
+        </ResizablePanel>
       </ResizablePanelGroup>
       {/* </Hider> */}
     </div>

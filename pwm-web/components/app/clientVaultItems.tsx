@@ -1,8 +1,8 @@
 "use client";
 
-import sw, { COOKIE_EXPIRE } from "@/lib/serverWrapper";
 import { useQuery } from "@tanstack/react-query";
 import { ClientVaultItem } from "./clientVaultItem";
+import { ServerGetItems } from "@/lib/serverWrapper";
 interface Props {
   serverItems: VaultItem[];
   token: string;
@@ -10,7 +10,7 @@ interface Props {
 export function ClientVaultItems({ serverItems, token }: Props) {
   const clientItems = useQuery({
     queryKey: ["vault_items"],
-    queryFn: () => sw.items(token),
+    queryFn: () => ServerGetItems(token),
     refetchInterval: 60 * 1000,
     initialData: serverItems,
   });

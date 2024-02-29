@@ -4,6 +4,7 @@ const nextConfig = {
   images: {
     remotePatterns: [
       { hostname: "icons.duckduckgo.com", pathname: "/ip3/*.ico" },
+      { hostname: "*", pathname: "/**" },
     ],
   },
   logging: {

@@ -1,6 +1,9 @@
-import aesjs from "aes-js";
 import { pbkdf2Sync, pseudoRandomBytes } from "crypto";
 import { TextDecoder, TextEncoder } from "util";
+import aesjs from "aes-js";
+import { useAtom } from "jotai";
+import { useMemo } from "react";
+import { ContentKey } from "./state/key";
 export function decryptContentKey(
   enc_key: Uint8Array,
   iv: Uint8Array,
@@ -57,4 +60,27 @@ export function decryptWithConKey(
   const decrypted_content = cbc.decrypt(decrypt_payload);
   const decrypted_content_hex = aesjs.utils.utf8.fromBytes(decrypted_content);
   return decrypted_content_hex;
+}
+export function UseDecrypt<T extends object>(object: T, conkey?: Uint8Array) {
+  const conkey2 = useAtom(ContentKey);
+  return useMemo(() => {
+    const contentKey = conkey || conkey2[0];
+    if (contentKey.length === 0) {
+      return object;
+    }
+    const old = { ...object };
+    if (contentKey.length === 0) {
+      return old;
+    }
+    for (const [k, v] of Object.entries(object)) {
+      if (typeof v === "string") {
+        /// this is incredibly stupid
+        old[k as unknown as keyof typeof old] = decryptWithConKey(
+          contentKey,
+          v,
+        ) as unknown as (typeof old)[keyof typeof old];
+      }
+    }
+    return old;
+  }, [object, conkey2[0]]);
 }
