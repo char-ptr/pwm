@@ -8,7 +8,10 @@ use axum::{
 use axum_client_ip::SecureClientIpSource;
 use axum_extra::headers::{ContentType, Header};
 use sea_orm::DbConn;
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::{
+    cors::{Any, CorsLayer},
+    trace::TraceLayer,
+};
 
 use self::{account::ACCOUNT_ROUTER, vault::VAULT_ROUTER};
 
@@ -32,5 +35,6 @@ pub fn construct_router(db: DbConn, SecureipSource: SecureClientIpSource) -> Rou
         .route("/test", get(test_route))
         .layer(cors)
         .layer(SecureipSource.into_extension())
+        .layer(TraceLayer::new_for_http())
         .with_state(crate::PwmState(db))
 }

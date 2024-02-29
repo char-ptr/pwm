@@ -13,6 +13,7 @@ use scrypt::{
 };
 use sea_orm::{ActiveModelTrait, DbErr, IntoActiveModel, Set, TransactionTrait, TryIntoModel};
 use serde::Deserialize;
+use tracing::instrument;
 use uuid::Uuid;
 
 use crate::{
@@ -44,6 +45,7 @@ pub struct RegisterData {
     content_key: String,
 }
 
+#[instrument]
 pub async fn user_tokens(
     State(_): State<PwmState>,
     access: LoggedInData,
@@ -51,6 +53,7 @@ pub async fn user_tokens(
     // let mut db_conn = db.acquire().await.or(Err(DATABASE_CONN_ERR))?;
     Json(PwmResponse::success(access.into_user().into()))
 }
+#[instrument]
 pub async fn user_data(
     State(_): State<PwmState>,
     access: LoggedInData,
@@ -58,6 +61,7 @@ pub async fn user_data(
     // let mut db_conn = db.acquire().await.or(Err(DATABASE_CONN_ERR))?;
     Json(PwmResponse::success(access.into_user().into()))
 }
+#[instrument]
 pub async fn login(
     State(db): State<PwmState>,
     device: IdentifiableDevice,
@@ -92,6 +96,7 @@ pub async fn login(
         )),
     ))
 }
+#[instrument]
 pub async fn register(
     State(db): State<PwmState>,
     device: IdentifiableDevice,

@@ -6,18 +6,30 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
+use futures::{FutureExt, StreamExt};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, ConnectionTrait, EntityTrait, IntoActiveModel, LoaderTrait,
-    QueryFilter, Set, Statement,
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, DeriveIntoActiveModel, DerivePartialModel,
+    EntityTrait, IntoActiveModel, IntoActiveValue, LoaderTrait, QueryFilter, Set, Statement,
 };
+use serde_json::Value;
+use tokio::pin;
+use tracing::instrument;
+use uuid::Uuid;
 
 use crate::{
-    db::entities::{vault, vault_folder, vault_item},
+    db::{
+        entities::{
+            sea_orm_active_enums::WebsiteMatchDetection, vault, vault_folder, vault_item,
+            vault_website_entry,
+        },
+        models::vault_ex::VaultItemWithWebsites,
+    },
     errors::DB_ERR,
     extractors::logged_in::LoggedInData,
     PwmResponse, PwmState,
 };
 
+#[instrument]
 pub async fn new_folder(
     State(db): State<PwmState>,
     access: LoggedInData,
@@ -46,6 +58,7 @@ pub struct MoveItemsRequest {
     item_ids: Vec<uuid::Uuid>,
     folder_id: uuid::Uuid,
 }
+#[instrument]
 pub async fn move_items(
     State(db): State<PwmState>,
     access: LoggedInData,
@@ -58,11 +71,28 @@ pub async fn move_items(
     }
     Ok(Json(PwmResponse::success(())))
 }
+#[derive(Debug, serde::Deserialize)]
+pub struct NewItemRequest {
+    pub folder_id: Option<Uuid>,
+    pub name: String,
+    pub username: Option<String>,
+    pub password: Option<String>,
+    pub notes: Option<String>,
+    pub custom_fields: Option<Value>,
+    pub icon_url: Option<String>,
+    pub websites: Vec<WebsiteEntrySmol>,
+}
+#[derive(Debug, serde::Deserialize)]
+pub struct WebsiteEntrySmol {
+    uri: String,
+    match_detection: Option<WebsiteMatchDetection>,
+}
+
 pub async fn new_item(
     State(db): State<PwmState>,
     access: LoggedInData,
-    item: Json<vault_item::Model>,
-) -> Result<Json<PwmResponse<vault_item::Model>>, (StatusCode, Json<PwmResponse>)> {
+    item: Json<NewItemRequest>,
+) -> Result<Json<PwmResponse<VaultItemWithWebsites>>, (StatusCode, Json<PwmResponse>)> {
     let vault = vault::Entity::find()
         .filter(vault::Column::UserId.eq(access.user_id))
         .all(db.deref())
@@ -72,16 +102,54 @@ pub async fn new_item(
             DB_ERR
         })?;
     let vault = vault.first().unwrap();
-    let mut item_act = item.0.into_active_model();
+    // move NewItemRequest into the active model
+    let item = item.0;
+    let mut item_act = vault_item::ActiveModel {
+        folder_id: Set(item.folder_id),
+        name: Set(item.name),
+        username: Set(item.username),
+        password: Set(item.password),
+        notes: Set(item.notes),
+        custom_fields: Set(item.custom_fields),
+        icon_url: Set(item.icon_url),
+        vault_id: Set(vault.vault_id),
+        item_id: Set(uuid::Uuid::new_v4()),
+    };
+    let t_db = &db.clone();
+    let websites = item.websites.iter().map(move |x| {
+        vault_website_entry::ActiveModel {
+            uri: Set(x.uri.clone()),
+            match_detection: Set(x.match_detection.clone()),
+            ..Default::default()
+        }
+        .insert(t_db.deref())
+    });
     item_act.vault_id = Set(vault.vault_id);
     item_act.item_id = Set(uuid::Uuid::new_v4());
+    let item_insert = item_act.insert(db.deref());
+    // let item_insert.
+    let inserts = futures::stream::iter(websites);
 
-    let ret_item = item_act.insert(db.deref()).await.map_err(|x| {
+    let ret_item = item_insert.await.map_err(|x| {
         tracing::error!("error inserting item: {}", x);
         DB_ERR
     })?;
-    Ok(Json(PwmResponse::success(ret_item)))
+    pin!(inserts);
+    let mut websites = Vec::with_capacity(item.websites.len());
+    while let Some(x) = inserts.next().await {
+        let x = x.await;
+        let x = x.map_err(|x| {
+            tracing::error!("error inserting website entry: {}", x);
+            DB_ERR
+        })?;
+        websites.push(x);
+    }
+
+    Ok(Json(PwmResponse::success(
+        ret_item.attach_websites(websites),
+    )))
 }
+#[instrument]
 pub async fn list_root_items(
     State(db): State<PwmState>,
     access: LoggedInData,

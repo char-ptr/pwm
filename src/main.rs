@@ -4,6 +4,8 @@ use clap::{Args, Parser};
 use pwm::{db::init_db, routes::construct_router, SecureIp};
 use sea_orm::ConnectOptions;
 use tracing::Level;
+use tracing_subscriber::{layer::SubscriberExt, Registry};
+use tracing_tree::HierarchicalLayer;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -49,10 +51,12 @@ fn read_file_string(possible_file: &str) -> Option<String> {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    tracing_subscriber::fmt()
-        .with_test_writer()
-        .with_max_level(Level::DEBUG)
-        .init();
+    let subscriber = Registry::default().with(HierarchicalLayer::new(2));
+    tracing::subscriber::set_global_default(subscriber).unwrap();
+    // tracing_subscriber::fmt()
+    //     .with_test_writer()
+    //     .with_max_level(Level::DEBUG)
+    //     .init();
     let _ = dotenvy::dotenv();
 
     let args = ClapCli::parse();

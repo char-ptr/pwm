@@ -9,6 +9,7 @@ use axum_extra::{headers::UserAgent, TypedHeader};
 
 use crate::{PwmResponse, PwmState};
 
+#[derive(Debug)]
 pub struct IdentifiableDevice {
     pub(crate) ip: std::net::IpAddr,
     pub(crate) user_agent: String,
