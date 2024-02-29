@@ -6,7 +6,7 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use futures::{FutureExt, StreamExt};
+use futures::{stream::FuturesUnordered, FutureExt, StreamExt};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectionTrait, DeriveIntoActiveModel, DerivePartialModel,
     EntityTrait, IntoActiveModel, IntoActiveValue, LoaderTrait, QueryFilter, Set, Statement,
@@ -116,28 +116,27 @@ pub async fn new_item(
         item_id: Set(uuid::Uuid::new_v4()),
     };
     let t_db = &db.clone();
-    let websites = item.websites.iter().map(move |x| {
-        vault_website_entry::ActiveModel {
+    let mut websites_stream = FuturesUnordered::new();
+    for x in item.websites.iter() {
+        let fut = vault_website_entry::ActiveModel {
             uri: Set(x.uri.clone()),
             match_detection: Set(x.match_detection.clone()),
             ..Default::default()
         }
-        .insert(t_db.deref())
-    });
+        .insert(t_db.deref());
+        websites_stream.push(fut);
+    }
     item_act.vault_id = Set(vault.vault_id);
     item_act.item_id = Set(uuid::Uuid::new_v4());
     let item_insert = item_act.insert(db.deref());
     // let item_insert.
-    let inserts = futures::stream::iter(websites);
-
     let ret_item = item_insert.await.map_err(|x| {
         tracing::error!("error inserting item: {}", x);
         DB_ERR
     })?;
-    pin!(inserts);
+    pin!(websites_stream);
     let mut websites = Vec::with_capacity(item.websites.len());
-    while let Some(x) = inserts.next().await {
-        let x = x.await;
+    while let Some(x) = websites_stream.next().await {
         let x = x.map_err(|x| {
             tracing::error!("error inserting website entry: {}", x);
             DB_ERR
