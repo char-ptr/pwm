@@ -1,8 +1,10 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { ClientVaultItem } from "./clientVaultItem";
 import { ServerGetItems } from "@/lib/serverWrapper";
+import { useQuery } from "@tanstack/react-query";
+import { useAtom } from "jotai";
+import { ClientVaultItem } from "./clientVaultItem";
+import { searchItemQuery } from "@/lib/state/app";
 interface Props {
   serverItems: VaultItem[];
   token: string;

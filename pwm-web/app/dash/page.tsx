@@ -31,7 +31,12 @@ export default async function DashPage() {
           </Suspense>
         </ResizablePanel>
         <ResizableHandle className="bg-white dark:bg-black" />
-        <ResizablePanel className="p-5">
+        <ResizablePanel
+          maxSize={50}
+          defaultSize={30}
+          minSize={30}
+          className="p-5"
+        >
           <ClientVaultRender a="test" />
         </ResizablePanel>
       </ResizablePanelGroup>
