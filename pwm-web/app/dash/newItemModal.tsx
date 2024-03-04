@@ -26,6 +26,10 @@ import {
 	SelectValue,
 	SelectItem,
 } from "@/components/ui/select";
+import FormNewFolder, {
+	folderSchema,
+} from "@/components/app/Forms/FormNewFolder";
+import { ServerAddFolder } from "@/lib/serverWrapper";
 export function NewItemModal({ access }: { access: string }) {
 	const ResetForm = useRef<null | (() => void)>(null);
 	const queryClient = useQueryClient();
@@ -34,7 +38,23 @@ export function NewItemModal({ access }: { access: string }) {
 	const [display, setDisplay] = useAtom(showNewItemModal);
 	const [contentKey, _1] = useAtom(ContentKey);
 	const [itemType, setItemType] = useState("item");
-	async function onSubmit(values: z.infer<typeof itemSchema>) {
+	async function submitNewFolder(values: z.infer<typeof folderSchema>) {
+		values.name = encryptWithConKey(contentKey, values.name);
+		if (values.icon_url) {
+			values.icon_url = encryptWithConKey(contentKey, values.icon_url);
+		}
+		console.log("submitting", values);
+		const ret = await ServerAddFolder(access, values as unknown as VaultFolder);
+		console.log("server response:", ret);
+		if (ret) {
+			setDisplay(false);
+			setResetState(true);
+			queryClient.invalidateQueries({ queryKey: ["vault_items"] });
+		} else {
+			console.log("failurwe");
+		}
+	}
+	async function submitNewItem(values: z.infer<typeof itemSchema>) {
 		values.password = encryptWithConKey(contentKey, values.password);
 		values.name = encryptWithConKey(contentKey, values.name);
 		values.username = encryptWithConKey(contentKey, values.username);
@@ -96,7 +116,16 @@ export function NewItemModal({ access }: { access: string }) {
 								</SelectContent>
 							</Select>
 							{itemType === "item" && (
-								<FormNewItem submitcb={onSubmit} request_reset={ResetForm} />
+								<FormNewItem
+									submitcb={submitNewItem}
+									request_reset={ResetForm}
+								/>
+							)}
+							{itemType === "folder" && (
+								<FormNewFolder
+									submitcb={submitNewFolder}
+									request_reset={ResetForm}
+								/>
 							)}
 						</div>
 					</DialogContent>

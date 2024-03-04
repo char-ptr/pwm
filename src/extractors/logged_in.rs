@@ -17,8 +17,8 @@ use crate::{
 
 #[derive(Debug)]
 pub struct LoggedInData {
-    access_token: access_token::Model,
-    user: user::Model,
+    pub(crate) access_token: access_token::Model,
+    pub(crate) user: user::Model,
 }
 impl LoggedInData {
     #[instrument(skip(db))]

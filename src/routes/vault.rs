@@ -8,8 +8,8 @@ use axum::{
 };
 use futures::{stream::FuturesUnordered, StreamExt};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, ConnectionTrait, EntityTrait, IntoActiveModel, LoaderTrait,
-    QueryFilter, Set, Statement,
+    ActiveModelTrait, ActiveValue::NotSet, ColumnTrait, ConnectionTrait, EntityTrait,
+    IntoActiveModel, LoaderTrait, QueryFilter, Set, Statement,
 };
 use serde_json::Value;
 use tokio::pin;
@@ -28,12 +28,43 @@ use crate::{
     extractors::logged_in::LoggedInData,
     PwmResponse, PwmState,
 };
+#[derive(Debug, serde::Deserialize)]
+struct LikeFolder {
+    name: String,
+    parent_id: Option<uuid::Uuid>,
+    icon_url: Option<String>,
+}
 
+#[instrument]
+pub async fn list_folders(
+    State(db): State<PwmState>,
+    access: LoggedInData,
+) -> Result<Json<PwmResponse<Vec<vault_folder::Model>>>, (StatusCode, Json<PwmResponse>)> {
+    let vault = vault::Entity::find()
+        .filter(vault::Column::UserId.eq(access.user_id))
+        .all(db.deref())
+        .await
+        .map_err(|x| {
+            tracing::error!("error listing root items: {}", x);
+            DB_ERR
+        })?;
+    let vault = vault.first().unwrap();
+    let folders = vault_folder::Entity::find()
+        .filter(vault_folder::Column::VaultId.eq(vault.vault_id))
+        .all(db.deref())
+        .await
+        .map_err(|x| {
+            tracing::error!("error listing root items: {}", x);
+            DB_ERR
+        })?;
+
+    Ok(Json(PwmResponse::success(folders)))
+}
 #[instrument]
 pub async fn new_folder(
     State(db): State<PwmState>,
     access: LoggedInData,
-    folder: Json<vault_folder::Model>,
+    folder: Json<LikeFolder>,
 ) -> Result<Json<PwmResponse<vault_folder::Model>>, (StatusCode, Json<PwmResponse>)> {
     let vault = vault::Entity::find()
         .filter(vault::Column::UserId.eq(access.user_id))
@@ -44,7 +75,13 @@ pub async fn new_folder(
             DB_ERR
         })?;
     let vault = vault.first().unwrap();
-    let mut folder_act = folder.0.into_active_model();
+    let mut folder_act = vault_folder::ActiveModel {
+        name: Set(folder.name.clone()),
+        parent_folder_id: Set(folder.parent_id),
+        icon_url: Set(folder.icon_url.clone()),
+        vault_id: Set(vault.vault_id),
+        folder_id: Set(uuid::Uuid::new_v4()),
+    };
     folder_act.folder_id = Set(uuid::Uuid::new_v4());
     folder_act.vault_id = Set(vault.vault_id);
     let ret_folder = folder_act.insert(db.deref()).await.map_err(|x| {
@@ -149,7 +186,7 @@ pub async fn new_item(
     )))
 }
 type RetLong = Result<Json<PwmResponse<Vec<vault_item::Model>>>, (StatusCode, Json<PwmResponse>)>;
-#[instrument]
+#[instrument(skip(db, access), fields(user_id = %access.user.user_id, access_token = %access.access_token.token))]
 pub async fn list_root_items(State(db): State<PwmState>, access: LoggedInData) -> RetLong {
     let vault = vault::Entity::find()
         .filter(vault::Column::UserId.eq(access.user_id))
@@ -180,6 +217,7 @@ pub(crate) static VAULT_ROUTER: LazyLock<Router<PwmState>> = LazyLock::new(|| {
     Router::new()
         .route("/items", post(new_item))
         .route("/items", get(list_root_items))
+        .route("/folders", get(list_folders))
         .route("/folders", post(new_folder))
         .route("/move", post(move_items))
 });
