@@ -17,6 +17,15 @@ import { z } from "zod";
 import { tryAddItem } from "./actions";
 import { useQueryClient } from "@tanstack/react-query";
 import FormNewItem, { itemSchema } from "@/components/app/Forms/FormNewItem";
+import {
+	Select,
+	SelectContent,
+	SelectGroup,
+	SelectLabel,
+	SelectTrigger,
+	SelectValue,
+	SelectItem,
+} from "@/components/ui/select";
 export function NewItemModal({ access }: { access: string }) {
 	const ResetForm = useRef<null | (() => void)>(null);
 	const queryClient = useQueryClient();
@@ -24,6 +33,7 @@ export function NewItemModal({ access }: { access: string }) {
 	const [resetState, setResetState] = useState(false);
 	const [display, setDisplay] = useAtom(showNewItemModal);
 	const [contentKey, _1] = useAtom(ContentKey);
+	const [itemType, setItemType] = useState("item");
 	async function onSubmit(values: z.infer<typeof itemSchema>) {
 		values.password = encryptWithConKey(contentKey, values.password);
 		values.name = encryptWithConKey(contentKey, values.name);
@@ -68,7 +78,27 @@ export function NewItemModal({ access }: { access: string }) {
 								Add a new login into your vault!
 							</DialogDescription>
 						</DialogHeader>
-						<FormNewItem submitcb={onSubmit} request_reset={ResetForm} />
+						<div>
+							<Select
+								value={itemType}
+								onValueChange={(x) => setItemType(x)}
+								defaultValue="item"
+							>
+								<SelectTrigger className="mb-5 w-[180px]">
+									<SelectValue placeholder="Select Item Type" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectGroup>
+										<SelectLabel>Item Type</SelectLabel>
+										<SelectItem value="item">New Entry</SelectItem>
+										<SelectItem value="folder">New Folder</SelectItem>
+									</SelectGroup>
+								</SelectContent>
+							</Select>
+							{itemType === "item" && (
+								<FormNewItem submitcb={onSubmit} request_reset={ResetForm} />
+							)}
+						</div>
 					</DialogContent>
 				</Dialog>
 			)}
