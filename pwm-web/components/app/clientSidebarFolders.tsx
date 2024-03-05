@@ -30,7 +30,7 @@ export default function ClientSidebarFolders({
 		const levels: FolderTree = [];
 		if (!data) return levels;
 		const map: { [x: string]: number } = {};
-		let node: VaultFolder;
+		let node: FolderWithChildren;
 		const roots: FolderTree = [];
 		let i: number;
 
@@ -46,7 +46,7 @@ export default function ClientSidebarFolders({
 				// if you have dangling branches check that map[node.parentId] exists
 				list[map[node.parent_folder_id]].children.push(node);
 			} else {
-				roots.push(node as FolderWithChildren);
+				roots.push(node);
 			}
 		}
 		return roots;
@@ -103,7 +103,9 @@ export function ClientSidebarFolder({
 						set_folder_id(folder.folder_id);
 					}}
 					variant={"ghost"}
-					className="gap-5 h-12 text-xl text-left hover:bg-neutral-100/10 items-center justify-start hover:text-white"
+					className={`gap-5 h-12 text-xl text-left hover:!bg-neutral-100/10 items-center justify-start hover:text-white ${
+						selected_folder_id === folder.folder_id ? "!bg-neutral-400/10" : ""
+					}`}
 				>
 					{ignore ? folder.name : decrypted_name}
 				</Button>
