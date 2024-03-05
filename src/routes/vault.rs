@@ -1,7 +1,7 @@
 use std::{ops::Deref, sync::LazyLock};
 
 use axum::{
-    extract::State,
+    extract::{Path, State},
     http::StatusCode,
     routing::{get, post},
     Json, Router,
@@ -187,7 +187,44 @@ pub async fn new_item(
 }
 type RetLong = Result<Json<PwmResponse<Vec<vault_item::Model>>>, (StatusCode, Json<PwmResponse>)>;
 #[instrument(skip(db, access), fields(user_id = %access.user.user_id, access_token = %access.access_token.token))]
-pub async fn list_root_items(State(db): State<PwmState>, access: LoggedInData) -> RetLong {
+pub async fn list_items_in_folder(
+    State(db): State<PwmState>,
+    Path(folder_id): Path<String>,
+    access: LoggedInData,
+) -> RetLong {
+    let vault = vault::Entity::find()
+        .filter(vault::Column::UserId.eq(access.user_id))
+        .all(db.deref())
+        .await
+        .map_err(|x| {
+            tracing::error!("error listing root items: {}", x);
+            DB_ERR
+        })?;
+    // .ok_or(DB_ERR)?;
+    let folder_id_as_uuid = Uuid::parse_str(&folder_id).map_err(|x| {
+        tracing::error!("error parsing folder id: {}", x);
+        (
+            StatusCode::BAD_REQUEST,
+            Json(PwmResponse::failure("invalid folder id", None)),
+        )
+    })?;
+    let vault_items = vault
+        .load_many(
+            vault_item::Entity::find().filter(vault_item::Column::FolderId.eq(folder_id_as_uuid)),
+            db.deref(),
+        )
+        .await
+        .map_err(|x| {
+            tracing::error!("error listing root items: {}", x);
+            DB_ERR
+        })?
+        .first()
+        .unwrap()
+        .clone();
+    Ok(Json(PwmResponse::success(vault_items)))
+}
+#[instrument(skip(db, access), fields(user_id = %access.user.user_id, access_token = %access.access_token.token))]
+pub async fn list_items(State(db): State<PwmState>, access: LoggedInData) -> RetLong {
     let vault = vault::Entity::find()
         .filter(vault::Column::UserId.eq(access.user_id))
         .all(db.deref())
@@ -216,7 +253,8 @@ pub async fn list_root_items(State(db): State<PwmState>, access: LoggedInData) -
 pub(crate) static VAULT_ROUTER: LazyLock<Router<PwmState>> = LazyLock::new(|| {
     Router::new()
         .route("/items", post(new_item))
-        .route("/items", get(list_root_items))
+        .route("/items", get(list_items))
+        .route("/items/:folder_id", get(list_items_in_folder))
         .route("/folders", get(list_folders))
         .route("/folders", post(new_folder))
         .route("/move", post(move_items))

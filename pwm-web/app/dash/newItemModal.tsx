@@ -9,7 +9,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { encryptWithConKey } from "@/lib/crypto";
-import { showNewItemModal } from "@/lib/state/app";
+import { selectedFolderId, showNewItemModal } from "@/lib/state/app";
 import { ContentKey } from "@/lib/state/key";
 import { useAtom } from "jotai";
 import { useEffect, useRef, useState } from "react";
@@ -32,6 +32,7 @@ import FormNewFolder, {
 import { ServerAddFolder } from "@/lib/serverWrapper";
 export function NewItemModal({ access }: { access: string }) {
 	const ResetForm = useRef<null | (() => void)>(null);
+	const [selected_folder_id] = useAtom(selectedFolderId);
 	const queryClient = useQueryClient();
 	const [waitClient, setWaitClient] = useState(false);
 	const [resetState, setResetState] = useState(false);
@@ -49,7 +50,7 @@ export function NewItemModal({ access }: { access: string }) {
 		if (ret) {
 			setDisplay(false);
 			setResetState(true);
-			queryClient.invalidateQueries({ queryKey: ["vault_items"] });
+			queryClient.invalidateQueries({ queryKey: ["folders", access] });
 		} else {
 			console.log("failurwe");
 		}
@@ -58,6 +59,9 @@ export function NewItemModal({ access }: { access: string }) {
 		values.password = encryptWithConKey(contentKey, values.password);
 		values.name = encryptWithConKey(contentKey, values.name);
 		values.username = encryptWithConKey(contentKey, values.username);
+		if (selected_folder_id.length) {
+			values.folder_id = selected_folder_id;
+		}
 		let icon_final = values.icon_url;
 		const icon_url = new URL(values.icon_url);
 		if (icon_url.pathname.length === 0) {

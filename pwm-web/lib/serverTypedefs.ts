@@ -40,7 +40,8 @@ interface RegisterPayload {
 	content_iv: Uint8Array;
 }
 interface VaultFolder {
-	item_id: string;
+	name: string;
+	folder_id: string;
 	icon_url?: string;
 	vault_id?: string;
 	parent_folder_id?: string;

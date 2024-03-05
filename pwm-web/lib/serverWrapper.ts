@@ -12,11 +12,34 @@ function baseHeaders(token: string) {
 		access_token: token,
 	};
 }
+export async function ServerGetFolders(
+	token: string,
+	folder_id?: string,
+): Promise<VaultFolder[] | null> {
+	const url = sc(backend_url, "/vault/folders");
+	url.searchParams.append("access_token", token);
+	const output: ServerResponse<VaultFolder[]> = await fetch(url, {
+		next: {
+			// 29 minutes
+			// tags: [`user_items:${folder_id}:${token}`],
+			// revalidate: COOKIE_EXPIRE,
+		},
+		headers: baseHeaders(token),
+	}).then((r) => r.json());
+	if (output.status === "Success") {
+		return output.data;
+	}
+	return null;
+}
 export async function ServerGetItems(
 	token: string,
 	folder_id?: string,
 ): Promise<VaultItem[] | null> {
 	const url = sc(backend_url, "/vault/items");
+	if (folder_id) {
+		url.pathname += `/${folder_id}`;
+	}
+	console.log(url);
 	url.searchParams.append("access_token", token);
 	const output: ServerResponse<VaultItem[]> = await fetch(url, {
 		next: {

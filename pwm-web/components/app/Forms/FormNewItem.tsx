@@ -20,6 +20,7 @@ import { z } from "zod";
 export const itemSchema = z.object({
 	password: z.string().min(8).max(100),
 	username: z.string().min(3),
+	folder_id: z.string().max(1000).optional(),
 	name: z.string().min(3),
 	icon_url: z.string().url(),
 	notes: z.string().max(1000).default(""),
