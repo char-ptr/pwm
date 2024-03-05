@@ -44,6 +44,9 @@ export function NewItemModal({ access }: { access: string }) {
 		if (values.icon_url) {
 			values.icon_url = encryptWithConKey(contentKey, values.icon_url);
 		}
+		if (selected_folder_id.length) {
+			values.parent_folder_id = selected_folder_id;
+		}
 		console.log("submitting", values);
 		const ret = await ServerAddFolder(access, values as unknown as VaultFolder);
 		console.log("server response:", ret);

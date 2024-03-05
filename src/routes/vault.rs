@@ -31,7 +31,7 @@ use crate::{
 #[derive(Debug, serde::Deserialize)]
 struct LikeFolder {
     name: String,
-    parent_id: Option<uuid::Uuid>,
+    parent_folder_id: Option<uuid::Uuid>,
     icon_url: Option<String>,
 }
 
@@ -77,7 +77,7 @@ pub async fn new_folder(
     let vault = vault.first().unwrap();
     let mut folder_act = vault_folder::ActiveModel {
         name: Set(folder.name.clone()),
-        parent_folder_id: Set(folder.parent_id),
+        parent_folder_id: Set(folder.parent_folder_id),
         icon_url: Set(folder.icon_url.clone()),
         vault_id: Set(vault.vault_id),
         folder_id: Set(uuid::Uuid::new_v4()),
