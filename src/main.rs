@@ -3,7 +3,7 @@ use std::{error::Error, fs::File, io::Read, net::SocketAddr, path::Path};
 use clap::{Args, Parser};
 use pwm::{db::init_db, routes::construct_router, SecureIp};
 use sea_orm::ConnectOptions;
-use tracing::{info};
+use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, EnvFilter, Registry};
 use tracing_tree::HierarchicalLayer;
 

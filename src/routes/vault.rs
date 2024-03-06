@@ -35,7 +35,7 @@ struct LikeFolder {
     icon_url: Option<String>,
 }
 
-#[instrument]
+#[instrument(skip(db, access), fields(user_id = %access.user.user_id, access_token = %access.access_token.token))]
 pub async fn list_folders(
     State(db): State<PwmState>,
     access: LoggedInData,
@@ -192,6 +192,7 @@ pub async fn list_items_in_folder(
     Path(folder_id): Path<String>,
     access: LoggedInData,
 ) -> RetLong {
+    tracing::debug!("fetching vault from user_id {}", access.user_id);
     let vault = vault::Entity::find()
         .filter(vault::Column::UserId.eq(access.user_id))
         .all(db.deref())
@@ -208,6 +209,7 @@ pub async fn list_items_in_folder(
             Json(PwmResponse::failure("invalid folder id", None)),
         )
     })?;
+    tracing::debug!("fetching items in folder {}", folder_id);
     let vault_items = vault
         .load_many(
             vault_item::Entity::find().filter(vault_item::Column::FolderId.eq(folder_id_as_uuid)),
@@ -221,10 +223,12 @@ pub async fn list_items_in_folder(
         .first()
         .unwrap()
         .clone();
+    tracing::debug!("got {} items in folder {}", vault_items.len(), folder_id);
     Ok(Json(PwmResponse::success(vault_items)))
 }
 #[instrument(skip(db, access), fields(user_id = %access.user.user_id, access_token = %access.access_token.token))]
 pub async fn list_items(State(db): State<PwmState>, access: LoggedInData) -> RetLong {
+    tracing::debug!("fetching vault from user_id {}", access.user_id);
     let vault = vault::Entity::find()
         .filter(vault::Column::UserId.eq(access.user_id))
         .all(db.deref())
@@ -234,6 +238,7 @@ pub async fn list_items(State(db): State<PwmState>, access: LoggedInData) -> Ret
             DB_ERR
         })?;
     // .ok_or(DB_ERR)?;
+    tracing::debug!("fetching root items");
     let vault_items = vault
         .load_many(
             vault_item::Entity::find().filter(vault_item::Column::FolderId.is_null()),
@@ -247,6 +252,7 @@ pub async fn list_items(State(db): State<PwmState>, access: LoggedInData) -> Ret
         .first()
         .unwrap()
         .clone();
+    tracing::debug!("got {} root items", vault_items.len());
     Ok(Json(PwmResponse::success(vault_items)))
 }
 

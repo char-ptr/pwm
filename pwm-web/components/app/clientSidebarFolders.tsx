@@ -1,5 +1,5 @@
 "use client";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { QueryClient, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "../ui/button";
 import { ServerGetFolders } from "@/lib/serverWrapper";
 import { decryptWithConKey } from "@/lib/crypto";
@@ -20,12 +20,7 @@ export default function ClientSidebarFolders({
 		queryKey: ["folders", access_token],
 	});
 	const queryClient = useQueryClient();
-	const [selected_folder_id, set_folder_id] = useAtom(selectedFolderId);
 	const [conkey] = useAtom(ContentKey);
-	const setSelectedAsRoot = () => {
-		queryClient.invalidateQueries({ queryKey: ["vault_items"] });
-		set_folder_id("");
-	};
 	const joinedFolders = useMemo(() => {
 		const levels: FolderTree = [];
 		if (!data) return levels;
@@ -62,6 +57,7 @@ export default function ClientSidebarFolders({
 					conkey={conkey}
 					ignore={true}
 					folder={{ name: "Root", folder_id: "", children: joinedFolders }}
+					queryClient={queryClient}
 				/>
 				{/* {joinedFolders?.map((folder) => ( */}
 				{/* 	<ClientSidebarFolder conkey={conkey} folder={folder} /> */}
@@ -70,12 +66,17 @@ export default function ClientSidebarFolders({
 		</div>
 	);
 }
-export function ClientSidebarFolder({
+function ClientSidebarFolder({
 	folder,
 	conkey,
 	ignore = false,
-}: { ignore?: boolean; conkey: Uint8Array; folder: FolderWithChildren }) {
-	const queryClient = useQueryClient();
+	queryClient,
+}: {
+	ignore?: boolean;
+	conkey: Uint8Array;
+	folder: FolderWithChildren;
+	queryClient: QueryClient;
+}) {
 	const [selected_folder_id, set_folder_id] = useAtom(selectedFolderId);
 	const [open, setOpen] = useState(false);
 	const decrypted_name = useMemo(() => {
@@ -92,7 +93,7 @@ export function ClientSidebarFolder({
 						onClick={() => {
 							setOpen(!open);
 						}}
-						variant={"ghost"}
+						variant={"link"}
 					>
 						{open ? "▼" : "▶"}
 					</Button>
@@ -103,7 +104,7 @@ export function ClientSidebarFolder({
 						set_folder_id(folder.folder_id);
 					}}
 					variant={"ghost"}
-					className={`gap-5 h-12 text-xl text-left hover:!bg-neutral-100/10 items-center justify-start hover:text-white ${
+					className={`gap-5 flex-auto h-12 text-xl text-left hover:!bg-neutral-100/10 items-center justify-start hover:text-white ${
 						selected_folder_id === folder.folder_id ? "!bg-neutral-400/10" : ""
 					}`}
 				>
@@ -114,6 +115,7 @@ export function ClientSidebarFolder({
 				{open &&
 					folder.children.map((child) => (
 						<ClientSidebarFolder
+							queryClient={queryClient}
 							key={child.folder_id}
 							conkey={conkey}
 							folder={child}

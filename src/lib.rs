@@ -15,7 +15,7 @@ pub mod routes;
 #[derive(Debug, Clone)]
 pub struct PwmState(DbConn);
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub enum PwmStatus {
     Success,
     Failure {
@@ -23,7 +23,7 @@ pub enum PwmStatus {
         fix: Option<&'static str>,
     },
 }
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct PwmResponse<S: Serialize + Clone = ()> {
     status: PwmStatus,
     data: Option<S>,

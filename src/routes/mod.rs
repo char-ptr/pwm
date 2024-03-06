@@ -3,7 +3,7 @@ pub mod vault;
 use axum::{
     http::{HeaderName, Method},
     routing::get,
-    Router,
+    Extension, Router,
 };
 use axum_client_ip::SecureClientIpSource;
 use axum_extra::headers::{ContentType, Header};
@@ -12,6 +12,8 @@ use tower_http::{
     cors::{Any, CorsLayer},
     trace::TraceLayer,
 };
+
+use crate::extractors::{cacher::ReadyCache, logged_in::LoggedInData};
 
 use self::{account::ACCOUNT_ROUTER, vault::VAULT_ROUTER};
 
@@ -33,6 +35,9 @@ pub fn construct_router(db: DbConn, secure_ip_source: SecureClientIpSource) -> R
         .nest("/account", ACCOUNT_ROUTER.clone())
         .nest("/vault", VAULT_ROUTER.clone())
         .route("/test", get(test_route))
+        .layer(Extension(ReadyCache::<LoggedInData>::new(
+            std::time::Duration::from_secs(60 * 60),
+        )))
         .layer(cors)
         .layer(secure_ip_source.into_extension())
         .layer(TraceLayer::new_for_http())

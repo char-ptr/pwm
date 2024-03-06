@@ -28,7 +28,7 @@ export async function SideBar() {
 				<div className="flex flex-col">
 					<Button
 						variant={"ghost"}
-						className="gap-5 h-12 text-xl text-left hover:bg-neutral-100/10 items-center justify-start hover:text-white"
+						className="!bg-neutral-400/10 gap-5 h-12 text-xl text-left hover:bg-neutral-100/10 items-center justify-start hover:text-white"
 					>
 						<Image
 							className="w-auto h-full object-contain shadow-md select-none aspect-square rounded-full"
