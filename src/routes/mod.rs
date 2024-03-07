@@ -13,7 +13,10 @@ use tower_http::{
     trace::TraceLayer,
 };
 
-use crate::extractors::{cacher::ReadyCache, logged_in::LoggedInData};
+use crate::extractors::{
+    cacher::ReadyCache,
+    logged_in::{LoggedInData, LoggedInResult},
+};
 
 use self::{account::ACCOUNT_ROUTER, vault::VAULT_ROUTER};
 
@@ -35,7 +38,7 @@ pub fn construct_router(db: DbConn, secure_ip_source: SecureClientIpSource) -> R
         .nest("/account", ACCOUNT_ROUTER.clone())
         .nest("/vault", VAULT_ROUTER.clone())
         .route("/test", get(test_route))
-        .layer(Extension(ReadyCache::<LoggedInData>::new(
+        .layer(Extension(ReadyCache::<LoggedInResult>::new(
             std::time::Duration::from_secs(60 * 60),
         )))
         .layer(cors)
