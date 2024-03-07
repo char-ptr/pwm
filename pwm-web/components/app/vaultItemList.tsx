@@ -6,5 +6,9 @@ import { Suspense } from "react";
 export async function VaultItemList({ token }: { token: string }) {
   const all_items = await ServerGetItems(token);
   console.log("items", all_items);
-  return <ClientVaultItems token={token} serverItems={all_items ?? []} />;
+  return (
+    <Suspense fallback={<div>hi</div>}>
+      <ClientVaultItems token={token} serverItems={all_items ?? []} />
+    </Suspense>
+  );
 }
