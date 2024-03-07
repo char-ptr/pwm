@@ -138,7 +138,7 @@ where
                         .ok_or(access_messed_err.clone())?
                         .or(Err(access_messed_err));
                     debug!("finished processing token");
-                    return data;
+                    data
                 })
             })
             .map_err(|x| match x {
@@ -153,7 +153,10 @@ where
             Err(mut r) => {
                 debug!("data in reciever, waiting.");
                 match r.recv().await {
-                    Ok(x) => x,
+                    Ok(x) => {
+                        debug!("reciever sent data!");
+                        x
+                    }
                     Err(_) => {
                         error!("broadcast channel closed");
                         Err((
