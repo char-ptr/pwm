@@ -34,6 +34,10 @@ export function ClientVaultItems({ serverItems, token }: Props) {
           .fill(0)
           .map((_, i) => (
             <div
+              key={`itemskeleton${
+                // biome-ignore lint/suspicious/noArrayIndexKey: it's impossible to change
+                i
+                }`}
               className={`flex rounded-lg flex-row gap-4 items-center p-4 
             h-16`}
             >
